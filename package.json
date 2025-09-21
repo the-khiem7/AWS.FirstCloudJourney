@@ -1,0 +1,14 @@
+{
+  "name": "first_cloud_journey",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "prebuild": "git submodule update --init --recursive || true",
+    "build": "hugo -D --gc --minify",
+    "dev": "hugo server -D"
+  },
+  "devDependencies": {
+    "hugo-bin": "^0.147.0"
+  }
+}
