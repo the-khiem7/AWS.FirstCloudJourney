@@ -11,7 +11,7 @@ pre : " <b> 7.3 </b> "
 Amazon Bedrock cung cấp nền tảng toàn diện để **xây dựng, triển khai và mở rộng ứng dụng Generative AI**.
 Điểm mạnh: không cần quản lý hạ tầng, tích hợp nhiều mô hình hàng đầu và bảo mật theo chuẩn AWS.
 
-📷 *\[Placeholder: Slide – Amazon Bedrock Overview]*
+![](AmazonBedrockOverview.jpg)
 
 ### Các năng lực chính:
 
@@ -38,7 +38,7 @@ Amazon Bedrock cung cấp nền tảng toàn diện để **xây dựng, triển
 
 Bedrock tích hợp **đa dạng mô hình Fully Managed** từ các công ty AI hàng đầu:
 
-📷 *\[Placeholder: Slide – Amazon Bedrock Model Providers]*
+![](AmazonBedrockModelProviders.jpg)
 
 * **AI21 Labs**: JAMBA – xử lý hiệu quả, ngữ cảnh dài.
 * **Amazon**: NOVA – Frontier intelligence, hiệu năng vượt trội.
@@ -66,7 +66,7 @@ Bedrock tích hợp **đa dạng mô hình Fully Managed** từ các công ty AI
 
 AgentCore là **dịch vụ nền tảng** cho việc triển khai AI Agents **an toàn và ở quy mô lớn**.
 
-📷 *\[Placeholder: Slide – Amazon Bedrock AgentCore]*
+![](AmazonBedrockAgentCore.jpg)
 
 ### Các năng lực chính:
 

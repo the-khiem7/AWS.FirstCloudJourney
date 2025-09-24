@@ -12,8 +12,7 @@ pre : " <b> 7.2 </b> "
 Jun Kai Loke đặt nền móng cho toàn bộ buổi chiều với chủ đề **Agentic AI** – thế hệ tiếp theo của trí tuệ nhân tạo, đi xa hơn so với Generative AI đơn thuần.
 Mục tiêu: minh họa **hành trình tiến hóa** từ AI hỗ trợ → AI agent → hệ thống AI đa agent hoàn toàn tự động.
 
-📷 *\[Placeholder: Slide 1 – Evolution into Agentic AI]*
-
+![](Slide1–EvolutionIntoAgenticAI.jpg)
 ---
 
 ## 2. The Evolution into Agentic AI
@@ -69,7 +68,7 @@ Mục tiêu: minh họa **hành trình tiến hóa** từ AI hỗ trợ → AI a
   * **33%** ứng dụng phần mềm doanh nghiệp sẽ tích hợp Agentic AI vào năm 2028 (từ <1% năm 2024).
   * **15%** quyết định công việc hàng ngày sẽ được đưa ra **tự động** bởi Agentic AI vào năm 2028.
 
-📷 *\[Placeholder: Slide 2 – Enterprises are doubling down on agents]*
+![](Slide2–EnterprisesAreDoublingDownOnAgents.jpg)
 
 ```cli
 2024    <1%  enterprise apps dùng Agentic AI
@@ -88,7 +87,7 @@ Jun Kai Loke cũng nhấn mạnh vào các **case study thành công ở Việt 
 * **Apero**: AI Adoption với NVIDIA GPUs → Scale đến **50M downloads**.
 * **TechcomSecurities**: Market & Investment Agents → Multi-agent analysis in action.
 
-📷 *\[Placeholder: Slide 3 – Vietnam Data & AI Success Stories]*
+![](Slide3–VietnamData&AISuccessStories.jpg)
 
 ```cli
 +-----------------+    +----------------+    +---------------------+
