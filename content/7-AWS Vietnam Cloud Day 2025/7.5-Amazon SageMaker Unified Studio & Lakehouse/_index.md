@@ -11,7 +11,7 @@ pre : " <b> 7.4 </b> "
 
 Amazon SageMaker Unified Studio is the **only unified development environment** for data, AI, and GenAI applications. It helps businesses reduce complexity, accelerate development, and deploy AI at scale.
 
-📷 *[Placeholder: Slide – Unified Studio Overview]*
+![](1.jpg)
 
 ### Key components in Unified Studio:
 
@@ -38,7 +38,7 @@ Amazon SageMaker Unified Studio is the **only unified development environment** 
 
 ## 2. SageMaker Unified Studio – Interface
 
-📷 *[Placeholder: Slide – Unified Studio UI]*
+![](2.jpg)
 
 * **Global URL**: No need to remember separate URLs for each workload.
 * **SSO Login**: Log in with corporate identity → increased auditability.
@@ -50,7 +50,7 @@ Amazon SageMaker Unified Studio is the **only unified development environment** 
 
 ## 3. Collaboration and Accelerated Development
 
-📷 *[Placeholder: Slide – Collaborate & Build Faster]*
+![](3.jpg)
 
 * **Train & deploy AI models**: Amazon SageMaker AI.
 * **Prepare & integrate data**: Amazon EMR.
@@ -65,7 +65,7 @@ Amazon SageMaker Unified Studio is the **only unified development environment** 
 
 ## 4. SageMaker Lakehouse
 
-📷 *[Placeholder: Slide – SageMaker Lakehouse]*
+![](4.jpg)
 
 Lakehouse = combination of **Data Lake (S3)** + **Data Warehouse (Redshift)** → a single platform for storage and analytics.
 
@@ -86,7 +86,7 @@ Lakehouse = combination of **Data Lake (S3)** + **Data Warehouse (Redshift)** �
 
 ## 5. Apache Iceberg + Zero-ETL
 
-📷 *[Placeholder: Slide – Zero-ETL Architecture]*
+![](6.jpg)
 
 * **Apache Iceberg API**: open standard for reading/writing data.
 * **Fine-grained access control**: detailed access management.
@@ -99,7 +99,7 @@ Lakehouse = combination of **Data Lake (S3)** + **Data Warehouse (Redshift)** �
 
 ## 6. Unified Lakehouse Storage Options
 
-📷 *[Placeholder: Slide – Storage Options]*
+![](5.jpg)
 
 * **Redshift Managed Storage**: optimized for large data warehouses.
 * **General-purpose S3**: flexible, low-cost storage.
@@ -109,7 +109,7 @@ Lakehouse = combination of **Data Lake (S3)** + **Data Warehouse (Redshift)** �
 
 ## 7. Data & AI Governance
 
-📷 *[Placeholder: Slide – Data Governance]*
+![](8.jpg)
 
 * **SageMaker Catalog**: integrated within Unified Studio.
 * **Built on Amazon DataZone**: manage data, models, GenAI, compute.
@@ -125,7 +125,7 @@ Lakehouse = combination of **Data Lake (S3)** + **Data Warehouse (Redshift)** �
 
 ## 8. Quick Start
 
-📷 *[Placeholder: Slide – Getting Started Easily]*
+![](9.jpg)
 
 * **Single URL login (SSO)**.
 * **Use pre-built templates** to quickly create projects.

@@ -11,7 +11,8 @@ pre : " <b> 7.4 </b> "
 
 Amazon SageMaker Unified Studio là môi trường phát triển **duy nhất và hợp nhất** cho dữ liệu, AI, và ứng dụng GenAI. Nó giúp doanh nghiệp giảm độ phức tạp, tăng tốc phát triển và triển khai AI ở quy mô lớn.
 
-📷 *[Placeholder: Slide – Unified Studio Overview]*
+<!-- 📷 *[Placeholder: Slide – Unified Studio Overview]* -->
+![](1.jpg)
 
 ### Thành phần chính trong Unified Studio:
 
@@ -38,7 +39,8 @@ Amazon SageMaker Unified Studio là môi trường phát triển **duy nhất v�
 
 ## 2. SageMaker Unified Studio – Giao diện
 
-📷 *[Placeholder: Slide – Unified Studio UI]*
+<!-- 📷 *[Placeholder: Slide – Unified Studio UI]* -->
+![](2.jpg)
 
 * **Global URL**: Không cần nhớ URL riêng cho từng workload.
 * **SSO Login**: Đăng nhập bằng corporate identity → tăng auditability.
@@ -50,7 +52,8 @@ Amazon SageMaker Unified Studio là môi trường phát triển **duy nhất v�
 
 ## 3. Hợp tác và tăng tốc phát triển
 
-📷 *[Placeholder: Slide – Collaborate & Build Faster]*
+<!-- 📷 *[Placeholder: Slide – Collaborate & Build Faster]* -->
+![](3.jpg)
 
 * **Huấn luyện & triển khai AI models**: Amazon SageMaker AI.
 * **Chuẩn bị & tích hợp dữ liệu**: Amazon EMR.
@@ -65,7 +68,8 @@ Amazon SageMaker Unified Studio là môi trường phát triển **duy nhất v�
 
 ## 4. SageMaker Lakehouse
 
-📷 *[Placeholder: Slide – SageMaker Lakehouse]*
+<!-- 📷 *[Placeholder: Slide – SageMaker Lakehouse]* -->
+![](4.jpg)
 
 Lakehouse = kết hợp **Data Lake (S3)** + **Data Warehouse (Redshift)** → một nền tảng duy nhất cho lưu trữ và phân tích.
 
@@ -86,7 +90,8 @@ Lakehouse = kết hợp **Data Lake (S3)** + **Data Warehouse (Redshift)** → m
 
 ## 5. Apache Iceberg + Zero-ETL
 
-📷 *[Placeholder: Slide – Zero-ETL Architecture]*
+<!-- 📷 *[Placeholder: Slide – Zero-ETL Architecture]* -->
+![](6.jpg)
 
 * **Apache Iceberg API**: chuẩn mở cho đọc/ghi dữ liệu.
 * **Fine-grained access control**: kiểm soát truy cập chi tiết.
@@ -99,7 +104,8 @@ Lakehouse = kết hợp **Data Lake (S3)** + **Data Warehouse (Redshift)** → m
 
 ## 6. Unified Lakehouse Storage Options
 
-📷 *[Placeholder: Slide – Storage Options]*
+<!-- 📷 *[Placeholder: Slide – Storage Options]* -->
+![](5.jpg)
 
 * **Redshift Managed Storage**: tối ưu cho kho dữ liệu lớn.
 * **General-purpose S3**: lưu trữ linh hoạt, chi phí thấp.
@@ -109,7 +115,8 @@ Lakehouse = kết hợp **Data Lake (S3)** + **Data Warehouse (Redshift)** → m
 
 ## 7. Data & AI Governance
 
-📷 *[Placeholder: Slide – Data Governance]*
+<!-- 📷 *[Placeholder: Slide – Data Governance]* -->
+![](8.jpg)
 
 * **SageMaker Catalog**: tích hợp trong Unified Studio.
 * **Built on Amazon DataZone**: quản lý dữ liệu, models, GenAI, compute.
@@ -125,7 +132,8 @@ Lakehouse = kết hợp **Data Lake (S3)** + **Data Warehouse (Redshift)** → m
 
 ## 8. Bắt đầu nhanh chóng
 
-📷 *[Placeholder: Slide – Getting Started Easily]*
+<!-- 📷 *[Placeholder: Slide – Getting Started Easily]* -->
+![](9.jpg)
 
 * **Single URL login (SSO)**.
 * **Dùng templates có sẵn** để tạo project nhanh.
