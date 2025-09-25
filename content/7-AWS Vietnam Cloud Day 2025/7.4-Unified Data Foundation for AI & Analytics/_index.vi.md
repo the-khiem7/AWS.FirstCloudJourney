@@ -9,7 +9,7 @@ pre : " <b> 7.4 </b> "
 
 ## 1. Thách thức từ Data Silos
 
-📷 *\[Placeholder: Slide – Deriving insights from data can be challenging]*
+![](DerivingInsightsFromDataCanBeChallenging.jpg)
 
 Doanh nghiệp thường gặp rào cản khi khai thác dữ liệu vì dữ liệu bị **chia cắt thành nhiều silo**:
 
@@ -29,7 +29,7 @@ Compliance/Cost  →   Business silo
 
 ## 2. Evolution of Data Requirements
 
-📷 *\[Placeholder: Slide – Ever evolving data requirements]*
+![](EverEvolvingDataRequirements.jpg)
 
 ### Truyền thống (Traditional)
 
@@ -56,7 +56,7 @@ Modern     --> Vector DB, unstructured + structured, stream-first
 
 ## 3. End-to-End Data Strategy
 
-📷 *\[Placeholder: Slide – End-to-end data strategy]*
+![](End-to-endDataStrategy.jpg)
 
 Một **chiến lược dữ liệu end-to-end** bao gồm:
 
@@ -75,8 +75,7 @@ Build/Share     Catalog/Govern     Use cases, BI, AI
 
 ## 4. Metadata làm trung tâm
 
-📷 *\[Placeholder: Slide – Metadata centric pipeline]*
-
+![](MetadataCentricPipeline.jpg)
 Khi metadata trở thành **trung tâm hệ sinh thái dữ liệu**:
 
 * **Nguồn dữ liệu (structured + unstructured)** → được chuẩn hóa & enrich.
@@ -98,7 +97,7 @@ Data Sources --> Prep/Enrich --> Metadata --> Analytics/AI
 
 ## 5. Relational & Purpose-built Databases
 
-📷 *\[Placeholder: Slide – Complete set of relational and purpose-built databases]*
+![](CompleteSetOfRelationalAndPurpose-builtDatabases.jpg)
 
 AWS cung cấp **đa dạng database** cho từng use-case:
 
@@ -118,7 +117,7 @@ AWS cung cấp **đa dạng database** cho từng use-case:
 
 ## 6. Why one-size-fits-all doesn’t work
 
-📷 *\[Placeholder: Slide – Developers want the right datastores]*
+![](DevelopersWantTheRightDatastores.jpg)
 
 Một relational DB duy nhất không thể đáp ứng mọi nhu cầu:
 
@@ -138,8 +137,7 @@ Flexibility ↓   Integration ↓
 
 ## 7. Enabling Vector Search
 
-📷 *\[Placeholder: Slide – Enabling vector search across services]*
-
+![](EnablingVectorSearchAcrossServices.jpg)
 Vector Search đã được AWS **tích hợp đa dịch vụ**:
 
 * OpenSearch Service, OpenSearch Serverless.
@@ -158,7 +156,7 @@ DynamoDB + MemoryDB + Neptune → Vector Search
 
 ## 8. AWS Analytics Stack
 
-📷 *\[Placeholder: Slide – Comprehensive set of analytics services]*
+![](ComprehensiveSetOfAnalyticsServices.jpg)
 
 Bộ công cụ phân tích toàn diện trên AWS:
 

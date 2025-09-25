@@ -10,6 +10,7 @@ pre : " <b> 7.4 </b> "
 ## 1. Challenges from Data Silos
 
 *[Placeholder: Slide - Deriving insights from data can be challenging]*
+![](DerivingInsightsFromDataCanBeChallenging.jpg)
 
 Organizations often hit blockers because data is **split across isolated silos**:
 
@@ -30,6 +31,7 @@ Compliance/Cost  ->   Business silo
 ## 2. Evolution of Data Requirements
 
 *[Placeholder: Slide - Ever evolving data requirements]*
+![](EverEvolvingDataRequirements.jpg)
 
 ### Traditional
 
@@ -57,6 +59,7 @@ Modern     -> Vector DB, mixed data, stream-first
 ## 3. End-to-End Data Strategy
 
 *[Placeholder: Slide - End-to-end data strategy]*
+![](End-to-endDataStrategy.jpg)
 
 A complete **end-to-end data strategy** includes:
 
@@ -76,6 +79,7 @@ Build/Share     Catalog/Govern     Use cases, BI, AI
 ## 4. Metadata at the Center
 
 *[Placeholder: Slide - Metadata centric pipeline]*
+![](MetadataCentricPipeline.jpg)
 
 When metadata sits at the **heart of the data ecosystem**:
 
@@ -99,6 +103,7 @@ Data Sources -> Prep/Enrich -> Metadata -> Analytics/AI
 ## 5. Relational & Purpose-built Databases
 
 *[Placeholder: Slide - Complete set of relational and purpose-built databases]*
+![](CompleteSetOfRelationalAndPurpose-builtDatabases.jpg)
 
 AWS offers **purpose-built databases** for every workload:
 
@@ -119,6 +124,7 @@ AWS offers **purpose-built databases** for every workload:
 ## 6. Why one-size-fits-all does not work
 
 *[Placeholder: Slide - Developers want the right datastores]*
+![](DevelopersWantTheRightDatastores.jpg)
 
 A single relational database cannot cover every demand:
 
@@ -139,6 +145,7 @@ Flexibility low   Integration low
 ## 7. Enabling Vector Search
 
 *[Placeholder: Slide - Enabling vector search across services]*
+![](EnablingVectorSearchAcrossServices.jpg)
 
 AWS has woven Vector Search **across multiple services**:
 
@@ -159,6 +166,7 @@ DynamoDB + MemoryDB + Neptune -> Vector Search
 ## 8. AWS Analytics Stack
 
 *[Placeholder: Slide - Comprehensive set of analytics services]*
+![](ComprehensiveSetOfAnalyticsServices.jpg)
 
 The AWS end-to-end analytics toolkit:
 
