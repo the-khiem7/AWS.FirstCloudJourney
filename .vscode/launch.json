@@ -1,0 +1,24 @@
+{
+  // Use this launch configuration to run the Hugo development server from VS Code.
+  // It executes the command in an integrated PowerShell terminal so you can see output and stop it with the terminal controls.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run: Hugo server (open browser)",
+      "type": "node",
+      "request": "launch",
+      // Use the system PowerShell executable (Windows). This runs the hugo CLI directly and opens the browser first.
+      "runtimeExecutable": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "Start-Process 'http://localhost:1313'; hugo server -D"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ]
+}
