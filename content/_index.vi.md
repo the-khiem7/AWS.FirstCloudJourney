@@ -14,9 +14,6 @@ chapter : false
 
 ### Nội dung
 
- 1. [Giới thiệu](1-introduce/)
- 2. [Các bước chuẩn bị](2-Prerequiste/)
- 3. [Tạo kết nối đến máy chủ EC2](3-Accessibilitytoinstance/)
- 4. [Quản lý session logs](4-s3log/)
- 5. [Port Forwarding](5-Portfwd/)
- 6. [Dọn dẹp tài nguyên](6-cleanup/)
+ 1. [Nhật ký công việc](1-worklog/)
+ 2. [Workshop: Nền tảng phân tích dữ liệu riêng tư](5-workshop/)
+ 3. [AWS Vietnam Cloud Day 2025](7-aws-vietnam-cloud-day-2025/)
