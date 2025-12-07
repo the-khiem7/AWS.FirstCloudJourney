@@ -5,7 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "prebuild": "git submodule update --init --recursive || true",
-    "build": "hugo -D --gc --minify",
+    "build": "hugo --gc --minify",
     "dev": "hugo server -D"
   },
   "devDependencies": {
