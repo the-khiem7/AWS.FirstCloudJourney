@@ -1,5 +1,4 @@
-# Base settings for GitHub Pages deployment
-baseURL = 'https://the-khiem7.github.io/AWS.FirstCloudJourney/'
+baseURL = 'https://the-khiem7.github.io/AWS.FirstCloudJourney'
 relativeURLs = false
 canonifyURLs = true
 publishDir = "public"
