@@ -41,15 +41,22 @@ Thiết kế này đảm bảo rằng:
 
 ---
 
-### Tạo và cấu hình S3 Gateway VPC Endpoint
+### Tạo và cấu hình các VPC Endpoint cho kết nối riêng tư
+
+Để lớp phân tích riêng tư hoạt động không cần NAT Gateway hoặc Internet Gateway, chúng ta triển khai hai loại VPC Endpoint:
+
+1. **S3 Gateway VPC Endpoint** – cho phép Lambda ETL và EC2 Data Warehouse truy cập S3 không cần public IP
+2. **SSM Interface VPC Endpoints** (3 endpoints) – cho phép truy cập admin an toàn qua AWS Systems Manager Session Manager vào EC2 instance riêng tư
+
+#### S3 Gateway VPC Endpoint
 
 S3 Gateway VPC Endpoint cho phép tài nguyên trong private subnet truy cập S3 **mà không cần dùng public IP**.
 
-**Hình 5-9: S3 Gateway VPC Endpoint gắn với các private route table**
+**Hình 5-9: S3 Gateway VPC Endpoint gắn với private route table**
 
 Ảnh chụp màn hình hiển thị Gateway VPC Endpoint cho dịch vụ Amazon S3 (`com.amazonaws.ap-southeast-1.s3`) trong VPC của workshop.  
-Endpoint có trạng thái `Available` và được gắn với hai private route table, vốn tương ứng với các subnet Analytics và ETL.  
-Cấu hình này đảm bảo traffic từ Lambda ETL và EC2 Data Warehouse tới S3 luôn đi trong mạng nội bộ AWS, không cần NAT Gateway.
+Endpoint có trạng thái `Available` và được gắn với private route table cho subnet Analytics & ETL (10.0.128.0/20).  
+Cấu hình này đảm bảo traffic từ cả Lambda ETL (`SBW_Lamda_ETL`) và EC2 Data Warehouse (`SBW_EC2_ShinyDWH` chạy PostgreSQL DWH + R Shiny Server) tới S3 luôn đi trong mạng nội bộ AWS, không cần NAT Gateway.
 
 ![Figure 5-9: Gateway VPC Endpoint attached to private route tables](/images/5-4-s3-gateway-vpce.png)
 
@@ -65,8 +72,8 @@ Cấu hình này đảm bảo traffic từ Lambda ETL và EC2 Data Warehouse t�
    ```
 
 5. Ở **Endpoint type**, chọn **Gateway**.  
-6. Ở **VPC**, chọn VPC của project, nơi chứa các subnet analytics và ETL.  
-7. Trong **Route tables**, chọn route table gắn với **private subnet (10.0.128.0/20)** để cả EC2 Data Warehouse và Lambda ETL đều có thể truy cập S3 riêng tư.  
+6. Ở **VPC**, chọn VPC của project (`SBW_Project-vpc`) nơi chứa private subnet Analytics & ETL.  
+7. Trong **Route tables**, chọn route table gắn với **private subnet (10.0.128.0/20)** – subnet duy nhất này chứa cả EC2 Data Warehouse (`SBW_EC2_ShinyDWH` với PostgreSQL DWH + R Shiny Server) và Lambda ETL (`SBW_Lamda_ETL`).  
 8. Ở phần **Policy**, trong workshop có thể bắt đầu với **Full access**:
 
    ```json
@@ -117,6 +124,36 @@ Sau khi endpoint được tạo, AWS sẽ tự động thêm route vào các rou
 
 Như vậy, các private subnet **không** gửi traffic trực tiếp ra Internet, nhưng **vẫn truy cập được S3** qua Gateway Endpoint.
 
+#### Tạo SSM Interface VPC Endpoints
+
+Để cho phép truy cập admin an toàn vào EC2 instance riêng tư (`SBW_EC2_ShinyDWH` chạy PostgreSQL DWH + R Shiny Server) mà không cần SSH hay bastion host, hãy tạo **ba Interface VPC Endpoints** cho AWS Systems Manager:
+
+1. Trong **VPC Console**, điều hướng tới **Endpoints** → **Create endpoint**.
+2. Tạo từng endpoint sau:
+
+   - **Endpoint 1**: `com.amazonaws.ap-southeast-1.ssm`
+   - **Endpoint 2**: `com.amazonaws.ap-southeast-1.ssmmessages`
+   - **Endpoint 3**: `com.amazonaws.ap-southeast-1.ec2messages`
+
+3. Cho mỗi endpoint:
+   - **Service category**: AWS services
+   - **Endpoint type**: Interface
+   - **VPC**: Chọn `SBW_Project-vpc`
+   - **Subnets**: Chọn private subnet (10.0.128.0/20)
+   - **Security group**: Tạo hoặc chọn `sg_ec2_VPC_Interface_endpoint_SSM` với:
+     - Inbound: `443/tcp` từ `sg_analytics_ShinyDWH` (security group của DWH EC2)
+     - Outbound: Cho phép tất cả traffic
+   - **Enable DNS name**: Đánh dấu chọn tùy chọn này
+
+4. Bấm **Create endpoint** cho mỗi endpoint.
+
+Ba Interface Endpoints này đảm bảo rằng:
+- EC2 instance có thể kết nối tới Systems Manager services qua HTTPS (port 443)
+- Tất cả traffic Session Manager ở trong mạng riêng AWS
+- Không cần NAT Gateway hay Internet Gateway cho admin access
+
+> **Quan trọng**: Cả S3 Gateway Endpoint và SSM Interface Endpoints (3 endpoints) đều cần thiết để lớp phân tích riêng tư hoạt động. S3 Gateway cho phép truy cập dữ liệu, trong khi SSM Interface Endpoints cho phép truy cập admin an toàn.
+
 ---
 
 ### Cấu hình Lambda ETL bên trong VPC
@@ -124,7 +161,7 @@ Như vậy, các private subnet **không** gửi traffic trực tiếp ra Intern
 Lambda ETL phải được đặt trong VPC để có thể:
 
 - Truy cập S3 thông qua **Gateway Endpoint**.  
-- Kết nối tới **PostgreSQL Data Warehouse** trong Analytics private subnet.
+- Kết nối tới **PostgreSQL Data Warehouse + R Shiny Server** trên EC2 instance trong private subnet.
 
 #### Bước 1 – Gắn Lambda vào VPC
 

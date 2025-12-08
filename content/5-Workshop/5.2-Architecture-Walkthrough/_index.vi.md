@@ -57,9 +57,8 @@ Sơ đồ minh họa:
 
 - Bên ngoài VPC: Amazon Cognito, Amazon CloudFront, AWS Amplify, Amazon API Gateway, Lambda Ingest và Amazon EventBridge.  
 - Bên trong VPC:  
-  - **Public Subnet – OLTP**: EC2 PostgreSQL OLTP và Internet Gateway.  
-  - **Private Subnet – Analytics**: EC2 PostgreSQL Data Warehouse và R Shiny Server (không có public IP).  
-  - **Private Subnet – ETL**: ETL Lambda chạy trong VPC và S3 Gateway VPC Endpoint.  
+  - **Public Subnet – OLTP (10.0.0.0/20)**: EC2 PostgreSQL OLTP (`SBW_EC2_WebDB`) và Internet Gateway.  
+  - **Private Subnet – Analytics & ETL (10.0.128.0/20)**: EC2 PostgreSQL Data Warehouse + R Shiny Server (`SBW_EC2_ShinyDWH`), Lambda ETL có gắn VPC (`SBW_Lamda_ETL`), S3 Gateway VPC Endpoint, và 3 SSM Interface VPC Endpoints (tất cả không có public IP).  
 - Các mũi tên được đánh số (1)–(13) thể hiện các luồng chính: đăng nhập người dùng, duyệt web, ingest clickstream, ETL theo lô, nạp dữ liệu vào Data Warehouse và trực quan hóa bằng Shiny.
 
 ![Hình 5-3: Kiến trúc tổng thể nền tảng Clickstream Analytics cho hệ thống thương mại điện tử](/images/5-1-clickstream-architecture.png)
@@ -69,8 +68,13 @@ Sơ đồ minh họa:
 
 Sơ đồ minh họa một VPC duy nhất với hai subnet:
 
-- **Public Subnet – OLTP (10.0.0.0/20)**, tô màu vàng, host EC2 PostgreSQL OLTP và kết nối tới Internet Gateway.  
-- **Private Subnet – Analytics & ETL (10.0.128.0/20)**, màu xanh lá, host EC2 PostgreSQL Data Warehouse, R Shiny Server, Lambda ETL chạy trong VPC và S3 Gateway VPC Endpoint (tất cả đều không có public IP).
+- **Public Subnet – OLTP (10.0.0.0/20)**, tô màu vàng, host EC2 PostgreSQL OLTP instance (`SBW_EC2_WebDB`) và kết nối tới Internet Gateway.  
+- **Private Subnet – Analytics & ETL (10.0.128.0/20)**, màu xanh lá, chứa:
+  - EC2 PostgreSQL Data Warehouse + R Shiny Server (`SBW_EC2_ShinyDWH`)
+  - Lambda ETL có gắn VPC (`SBW_Lamda_ETL`)
+  - S3 Gateway VPC Endpoint (cho truy cập S3)
+  - 3 SSM Interface VPC Endpoints (cho admin access an toàn: `ssm`, `ssmmessages`, `ec2messages`)
+  - Tất cả các thành phần đều không có public IP
 
 Route table của public subnet bao gồm route mặc định:
 

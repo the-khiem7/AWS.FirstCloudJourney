@@ -57,9 +57,8 @@ The diagram illustrates:
 
 - Outside the VPC: Amazon Cognito, Amazon CloudFront, AWS Amplify, Amazon API Gateway, Lambda Ingest, and Amazon EventBridge.  
 - Inside the VPC:  
-  - **Public Subnet – OLTP**: EC2 PostgreSQL OLTP instance and the Internet Gateway.  
-  - **Private Subnet – Analytics**: EC2 PostgreSQL Data Warehouse and R Shiny Server (no public IP).  
-  - **Private Subnet – ETL**: VPC-enabled ETL Lambda function and the S3 Gateway VPC Endpoint.  
+  - **Public Subnet – OLTP (10.0.0.0/20)**: EC2 PostgreSQL OLTP instance (`SBW_EC2_WebDB`) and the Internet Gateway.  
+  - **Private Subnet – Analytics & ETL (10.0.128.0/20)**: EC2 PostgreSQL Data Warehouse + R Shiny Server (`SBW_EC2_ShinyDWH`), VPC-enabled ETL Lambda (`SBW_Lamda_ETL`), S3 Gateway VPC Endpoint, and 3 SSM Interface VPC Endpoints (all without public IPs).  
 - Numbered arrows (1)–(13) show the main flows: user login, browsing, clickstream ingestion, batch ETL, loading data into the DW, and Shiny visualization.
 
 ![Figure 5-3: Overall Clickstream Analytics Architecture for the e-commerce platform](/images/5-1-clickstream-architecture.png)
@@ -69,8 +68,13 @@ The diagram illustrates:
 
 The diagram illustrates a single VPC with two subnets:
 
-- **Public Subnet – OLTP (10.0.0.0/20)**, highlighted in yellow, hosting the EC2 PostgreSQL OLTP instance and connected to the Internet Gateway.  
-- **Private Subnet – Analytics & ETL (10.0.128.0/20)**, in green, hosting the EC2 PostgreSQL Data Warehouse, the R Shiny Server, the VPC-enabled ETL Lambda function, and the S3 Gateway VPC Endpoint (all with no public IP).
+- **Public Subnet – OLTP (10.0.0.0/20)**, highlighted in yellow, hosting the EC2 PostgreSQL OLTP instance (`SBW_EC2_WebDB`) and connected to the Internet Gateway.  
+- **Private Subnet – Analytics & ETL (10.0.128.0/20)**, in green, hosting:
+  - EC2 PostgreSQL Data Warehouse + R Shiny Server (`SBW_EC2_ShinyDWH`)
+  - VPC-enabled ETL Lambda function (`SBW_Lamda_ETL`)
+  - S3 Gateway VPC Endpoint (for S3 access)
+  - 3 SSM Interface VPC Endpoints (for secure admin access: `ssm`, `ssmmessages`, `ec2messages`)
+  - All components have no public IP
 
 The public subnet route table includes a default route:
 
@@ -102,9 +106,10 @@ The private subnet route table:
    - Allows outbound for updates and external APIs
 
 2. **Private Subnet (10.0.128.0/20) - Analytics & ETL Layer**
-   - EC2 Data Warehouse (PostgreSQL) - no public IP
-   - EC2 R Shiny Server - no public IP
-   - SSM Interface Endpoint for Session Manager
+   - EC2 Data Warehouse (`SBW_EC2_ShinyDWH`): PostgreSQL DWH + R Shiny Server (no public IP)
+   - Lambda ETL (`SBW_Lamda_ETL`) with VPC attachment (no public IP)
+   - S3 Gateway VPC Endpoint (for private S3 access)
+   - 3 SSM Interface VPC Endpoints: `ssm`, `ssmmessages`, `ec2messages` (for secure Session Manager access)
    - No direct internet access (no route to IGW)
    - Fully isolated from public internet
 
@@ -120,9 +125,9 @@ The private subnet route table:
 - `10.0.0.0/16` → Local (VPC internal only)
 - S3 prefix list → S3 Gateway VPC Endpoint
 - **No default route to Internet Gateway**
-- Admin access via SSM Interface Endpoints
+- Admin access via 3 SSM Interface Endpoints (`ssm`, `ssmmessages`, `ec2messages`)
 
-> **Key Design**: No NAT Gateway deployed. Private components reach S3 via Gateway VPC Endpoint, eliminating NAT costs while maintaining security.
+> **Key Design**: No NAT Gateway deployed. Private components reach S3 via Gateway VPC Endpoint and use SSM Interface Endpoints for admin access, eliminating NAT costs while maintaining security.
 
 #### Security Groups
 
@@ -131,13 +136,18 @@ The private subnet route table:
 - Outbound: default (all allowed)
 
 **sg_analytics_ShinyDWH:**
-- Inbound: `5432/tcp` from Lambda ETL SG and Shiny SG
-- Outbound: `443/tcp` to SSM interface endpoints
-- Admin access via Session Manager (no inbound SSH)
+- Inbound: `5432/tcp` from Lambda ETL SG, `3838/tcp` for Shiny (via SSM port forwarding), `443/tcp` to SSM Interface Endpoints
+- Outbound: `443/tcp` to S3 Gateway Endpoint and SSM Interface Endpoints
+- Admin access via Session Manager through SSM Interface Endpoints (no inbound SSH)
 
 **sg_Lambda_ETL:**
 - No inbound (Lambda doesn't accept inbound)
-- Outbound: allowed to S3 endpoint + DWH SG
+- Outbound: allowed to S3 Gateway Endpoint + DWH SG (`5432/tcp`)
+
+**sg_ec2_VPC_Interface_endpoint_SSM:**
+- Inbound: `443/tcp` from `sg_analytics_ShinyDWH`
+- Outbound: All traffic (to AWS Systems Manager services)
+- Serves 3 Interface Endpoints: `ssm`, `ssmmessages`, `ec2messages`
 
 #### External AWS Services
 

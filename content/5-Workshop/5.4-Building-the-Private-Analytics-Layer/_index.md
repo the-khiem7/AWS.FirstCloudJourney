@@ -37,17 +37,26 @@ This design ensures that:
 
 - The Data Warehouse and R Shiny are **not directly reachable from the public Internet**.  
 - The ETL Lambda can access S3 and the Data Warehouse **only over private AWS networking**.  
-- There is **no NAT Gateway**, which reduces cost and simplifies the network footprint.---
+- There is **no NAT Gateway**, which reduces cost and simplifies the network footprint.
 
-### Creating and configuring the S3 Gateway VPC Endpoint
+---
 
-The S3 Gateway VPC Endpoint allows resources in private subnets to reach S3 **without using public IPs**.
+### Creating and configuring VPC Endpoints for private connectivity
 
-**Figure 5-9: S3 Gateway VPC Endpoint attached to private route tables**
+To enable the private analytics layer to function without NAT Gateway or Internet Gateway access, we deploy two types of VPC Endpoints:
+
+1. **S3 Gateway VPC Endpoint** – allows Lambda ETL and Data Warehouse EC2 to access S3 without public IP
+2. **SSM Interface VPC Endpoints** (3 endpoints) – enables secure admin access via AWS Systems Manager Session Manager to the private EC2 instance
+
+#### S3 Gateway VPC Endpoint
+
+The S3 Gateway VPC Endpoint allows resources in the private subnet to reach S3 **without using public IPs**.
+
+**Figure 5-9: S3 Gateway VPC Endpoint attached to private route table**
 
 The screenshot shows the Gateway VPC Endpoint for the Amazon S3 service (`com.amazonaws.ap-southeast-1.s3`) in the workshop VPC.  
-The endpoint is in the `Available` state and is associated with the two private route tables, which are in turn attached to the Analytics and ETL subnets.  
-This configuration ensures that traffic from the ETL Lambda and the Data Warehouse instance to S3 stays inside the AWS network and does not require a NAT Gateway.
+The endpoint is in the `Available` state and is associated with the private route table for the Analytics & ETL subnet (10.0.128.0/20).  
+This configuration ensures that traffic from both the ETL Lambda (`SBW_Lamda_ETL`) and the Data Warehouse EC2 instance (`SBW_EC2_ShinyDWH` running PostgreSQL DWH + R Shiny Server) to S3 stays inside the AWS network and does not require a NAT Gateway.
 
 ![Figure 5-9: Gateway VPC Endpoint attached to private route tables](/images/5-4-s3-gateway-vpce.png)
 
@@ -63,8 +72,8 @@ This configuration ensures that traffic from the ETL Lambda and the Data Warehou
    ```
 
 5. For **Endpoint type**, select **Gateway**.  
-6. For **VPC**, choose the project VPC that contains your analytics and ETL subnets.  
-7. Under **Route tables**, select the route table associated with the **private subnet (10.0.128.0/20)** to allow both the DW EC2 instance and ETL Lambda to access S3 privately.  
+6. For **VPC**, choose the project VPC (`SBW_Project-vpc`) that contains the private Analytics & ETL subnet.  
+7. Under **Route tables**, select the route table associated with the **private subnet (10.0.128.0/20)** – this single subnet hosts both the Data Warehouse EC2 (`SBW_EC2_ShinyDWH` with PostgreSQL DWH + R Shiny Server) and the ETL Lambda (`SBW_Lamda_ETL`).  
 8. In the **Policy** section, you can start with **Full access** for the workshop:
 
    ```json
@@ -113,7 +122,37 @@ After the endpoint is created, AWS automatically adds routes to the selected rou
 
    - There is **no** NAT Gateway target.
 
-This confirms that the private subnets do **not** send traffic directly to the Internet, but **can reach S3** through the Gateway Endpoint.
+This confirms that the private subnet does **not** send traffic directly to the Internet, but **can reach S3** through the Gateway Endpoint.
+
+#### Creating SSM Interface VPC Endpoints
+
+To enable secure admin access to the private EC2 instance (`SBW_EC2_ShinyDWH` running PostgreSQL DWH + R Shiny Server) without SSH or bastion host, create **three Interface VPC Endpoints** for AWS Systems Manager:
+
+1. In **VPC Console**, navigate to **Endpoints** → **Create endpoint**.
+2. Create each of the following endpoints:
+
+   - **Endpoint 1**: `com.amazonaws.ap-southeast-1.ssm`
+   - **Endpoint 2**: `com.amazonaws.ap-southeast-1.ssmmessages`
+   - **Endpoint 3**: `com.amazonaws.ap-southeast-1.ec2messages`
+
+3. For each endpoint:
+   - **Service category**: AWS services
+   - **Endpoint type**: Interface
+   - **VPC**: Select `SBW_Project-vpc`
+   - **Subnets**: Select the private subnet (10.0.128.0/20)
+   - **Security group**: Create or select `sg_ec2_VPC_Interface_endpoint_SSM` with:
+     - Inbound: `443/tcp` from `sg_analytics_ShinyDWH` (the DWH EC2 security group)
+     - Outbound: All traffic allowed
+   - **Enable DNS name**: Check this option
+
+4. Click **Create endpoint** for each.
+
+These three Interface Endpoints ensure that:
+- The EC2 instance can connect to Systems Manager services over HTTPS (port 443)
+- All Session Manager traffic stays on the AWS private network
+- No NAT Gateway or Internet Gateway is required for admin access
+
+> **Important**: Both S3 Gateway Endpoint and SSM Interface Endpoints (3 endpoints) are required for the private analytics layer to function. The S3 Gateway enables data access, while SSM Interface Endpoints enable secure admin access.
 
 ---
 
@@ -122,7 +161,7 @@ This confirms that the private subnets do **not** send traffic directly to the I
 The ETL Lambda function must be placed inside the VPC so it can:
 
 - Reach S3 via the **Gateway Endpoint**.  
-- Connect to the **PostgreSQL Data Warehouse** in the Analytics private subnet.
+- Connect to the **PostgreSQL Data Warehouse + R Shiny Server** on the EC2 instance in the private subnet.
 
 #### Step 1 – Attach the Lambda to the VPC
 
@@ -297,30 +336,22 @@ Instead, this architecture uses **AWS Systems Manager Session Manager**, which p
 3. An admin opens the **AWS Console** or uses the **AWS CLI** to start a Session Manager session.  
 4. The session is established through the SSM service—**no inbound SSH traffic** is required.
 
-#### SSM VPC Interface Endpoints (Private Connectivity)
+#### SSM VPC Interface Endpoints (Already Created)
 
-To keep all Session Manager traffic **inside the VPC** (avoiding public internet paths), deploy **VPC Interface Endpoints** for:
+> **Note**: The three SSM Interface VPC Endpoints (`ssm`, `ssmmessages`, `ec2messages`) were already created in the previous section "Creating SSM Interface VPC Endpoints" along with the S3 Gateway Endpoint. Both endpoint types are required for the private analytics layer to function properly.
 
-- `com.amazonaws.<region>.ssm`  
-- `com.amazonaws.<region>.ssmmessages`  
-- `com.amazonaws.<region>.ec2messages`
+With the SSM Interface Endpoints deployed:
 
-These endpoints are placed in the **Analytics private subnet** and associated with a security group that:
-
-- Allows **inbound HTTPS (port 443)** from the Data Warehouse EC2 security group.  
-- Allows **outbound** to AWS Systems Manager services.
-
-With these endpoints deployed:
-
-- The EC2 instance connects to SSM **without requiring a NAT Gateway** or Internet Gateway route.  
-- All management traffic stays on the **AWS private network**.
+- The EC2 instance (`SBW_EC2_ShinyDWH` running PostgreSQL DWH + R Shiny Server) connects to Systems Manager services over HTTPS (port 443) via the Interface Endpoints
+- All management traffic stays on the **AWS private network** within the private subnet (10.0.128.0/20)
+- No NAT Gateway or Internet Gateway route is required for admin access
 
 #### Connecting to the Data Warehouse EC2
 
 **Option A: AWS Console (browser-based shell)**
 
 1. Open the **EC2 Console**.  
-2. Select the Data Warehouse instance.  
+2. Select the Data Warehouse instance (`SBW_EC2_ShinyDWH`).  
 3. Click **Connect** → choose the **Session Manager** tab.  
 4. Click **Connect** to open a browser-based shell.
 
@@ -333,17 +364,18 @@ aws ssm start-session --target <instance-id>
 Once connected, you can:
 
 - Run `psql` to query the PostgreSQL Data Warehouse.  
-- Check logs, restart services, or perform maintenance tasks.  
-- Use **port forwarding** to access the Shiny Server UI from your local machine:
+- Check logs for both PostgreSQL and Shiny Server.
+- Restart services or perform maintenance tasks on the EC2 instance.  
+- Use **port forwarding** to access the R Shiny Server UI (port 3838) from your local machine:
 
   ```bash
   aws ssm start-session \
     --target <instance-id> \
     --document-name AWS-StartPortForwardingSession \
-    --parameters '{"portNumber":["3838"],"localPortNumber":["8080"]}'
+    --parameters '{"portNumber":["3838"],"localPortNumber":["3838"]}'
   ```
 
-  Then open `http://localhost:8080` in your browser to view Shiny dashboards.
+  Then open `http://localhost:3838/sbw_dashboard` in your browser to view Shiny dashboards.
 
 #### Benefits of Session Manager
 
