@@ -137,9 +137,9 @@ Lambda ETL phải được đặt trong VPC để có thể:
 2. Vào tab **Configuration** → mục **Network** (hoặc **Environment → VPC** tuỳ UI).  
 3. Bấm **Edit** và thiết lập:
 
-   - **VPC**: VPC của project.  
-   - **Subnets**: chọn **ETL private subnet (10.0.3.0/24)** (có thể chọn nhiều subnet ở các AZ khác nhau để tăng khả dụng).  
-   - **Security groups**: chọn security group:
+   - **VPC**: VPC của project (`SBW_Project-vpc`).  
+   - **Subnets**: chọn **private subnet (10.0.128.0/20)** (có thể chọn nhiều subnet ở các AZ khác nhau để tăng khả dụng).  
+   - **Security groups**: chọn security group (`sg_Lambda_ETL`):
      - Cho phép outbound tới S3 (qua Gateway Endpoint).  
      - Cho phép outbound tới EC2 Data Warehouse (port 5432).
 
@@ -149,7 +149,7 @@ Lambda ETL phải được đặt trong VPC để có thể:
 
 **Execution role** của Lambda ETL cần có:
 
-- Quyền **đọc từ** Raw Clickstream S3 bucket, ví dụ:
+- Quyền **đọc từ** Raw Clickstream S3 bucket (`clickstream-s3-ingest`), ví dụ:
 
   ```json
   {
@@ -159,8 +159,8 @@ Lambda ETL phải được đặt trong VPC để có thể:
       "s3:ListBucket"
     ],
     "Resource": [
-      "arn:aws:s3:::clickstream-raw-<account>-<region>",
-      "arn:aws:s3:::clickstream-raw-<account>-<region>/events/*"
+      "arn:aws:s3:::clickstream-s3-ingest",
+      "arn:aws:s3:::clickstream-s3-ingest/events/*"
     ]
   }
   ```
@@ -172,10 +172,12 @@ Lambda ETL phải được đặt trong VPC để có thể:
 
 Trong phần environment variables của Lambda ETL, lưu các biến:
 
-- `DW_HOST` – private IP hoặc hostname của EC2 Data Warehouse.  
-- `DW_PORT` – thường là `5432`.  
-- `DW_USER` / `DW_PASSWORD` – tài khoản có quyền insert vào các bảng DW.  
-- `DW_DATABASE` – tên database analytics.
+- `DWH_HOST` – private IP hoặc hostname của EC2 Data Warehouse (`SBW_EC2_ShinyDWH`).  
+- `DWH_PORT` – thường là `5432`.  
+- `DWH_USER` / `DWH_PASSWORD` – tài khoản có quyền insert vào các bảng DW.  
+- `DWH_DATABASE` – tên database analytics (`clickstream_dw`).  
+- `RAW_BUCKET` – tên S3 bucket chứa raw clickstream data (`clickstream-s3-ingest`).  
+- `AWS_REGION` – AWS region (`ap-southeast-1`).
 
 Mã Lambda sẽ sử dụng các biến này để tạo kết nối (ví dụ thông qua thư viện client PostgreSQL).
 
@@ -220,21 +222,28 @@ Mỗi lần chạy (được lên lịch qua EventBridge hoặc invoke thủ cô
 Ví dụ một bảng fact đơn giản cho events:
 
 ```sql
-CREATE TABLE IF NOT EXISTS fact_events (
-    event_id          UUID PRIMARY KEY,
-    event_timestamp   TIMESTAMPTZ NOT NULL,
-    event_name        TEXT NOT NULL,
-    user_id           TEXT,
-    session_id        TEXT,
-    client_id         TEXT,
-    product_id        TEXT,
-    page_url          TEXT,
-    traffic_source    TEXT,
-    created_at        TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS clickstream_events (
+    event_id                      UUID PRIMARY KEY,
+    event_timestamp               TIMESTAMPTZ NOT NULL,
+    event_name                    TEXT NOT NULL,
+    user_id                       TEXT,
+    user_login_state              TEXT,
+    identity_source               TEXT,
+    client_id                     TEXT,
+    session_id                    TEXT,
+    is_first_visit                BOOLEAN,
+    context_product_id            TEXT,
+    context_product_name          TEXT,
+    context_product_category      TEXT,
+    context_product_brand         TEXT,
+    context_product_price         NUMERIC,
+    context_product_discount_price NUMERIC,
+    context_product_url_path      TEXT,
+    created_at                    TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
-Lambda ETL sẽ insert dữ liệu vào `fact_events` dựa trên các file JSON đã đọc từ S3.
+Lambda ETL sẽ insert dữ liệu vào `clickstream_events` dựa trên các file JSON đã đọc từ S3.
 
 **Hình 5-10: Cấu hình VPC cho Lambda ETL**
 
@@ -250,14 +259,14 @@ Cấu hình này cho phép function truy cập S3 Gateway VPC Endpoint và EC2 D
 
 Để đảm bảo chỉ cho phép các luồng traffic cần thiết:
 
-- **Security Group cho EC2 Data Warehouse (SG-DW)**
+- **Security Group cho EC2 Data Warehouse (`sg_analytics_ShinyDWH`)**
 
   - Inbound:
     - Cho phép `5432/tcp` **từ security group của Lambda ETL** (không từ `0.0.0.0/0`).  
   - Outbound:
     - Cho phép tất cả outbound (hoặc siết chặt hơn nếu cần cho mục đích update/monitoring).
 
-- **Security Group cho Lambda ETL (SG-ETL)**
+- **Security Group cho Lambda ETL (`sg_Lambda_ETL`)**
 
   - Inbound:
     - Không cần (Lambda không nhận kết nối inbound).  

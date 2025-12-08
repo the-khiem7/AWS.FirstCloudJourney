@@ -22,10 +22,10 @@ Trước khi mở dashboard, hãy đảm bảo Data Warehouse đã được cậ
 
 #### Bước 1 – Sinh các sự kiện clickstream mới
 
-1. Mở domain CloudFront của ứng dụng thương mại điện tử, ví dụ:
+1. Mở domain Amplify của ứng dụng thương mại điện tử:
 
    ```text
-   https://dxxxxxxxx.cloudfront.net
+   https://main.d2q6im0b1720uc.amplifyapp.com/
    ```
 
 2. Đăng nhập bằng một user test qua **Amazon Cognito**.  
@@ -45,23 +45,23 @@ Trước khi mở dashboard, hãy đảm bảo Data Warehouse đã được cậ
 Có ba cách chính để chạy Lambda ETL:
 
 - **A. Chờ EventBridge chạy theo lịch**  
-  - Nếu rule ETL đã được cấu hình chạy mỗi 15 hoặc 30 phút, bạn có thể đơn giản là chờ lần trigger tiếp theo.
+  - Nếu rule ETL (`SBW_ETL_HOURLY_RULE`) đã được cấu hình chạy theo `rate(1 hour)`, bạn có thể đơn giản là chờ lần trigger tiếp theo.
 
 - **B. Trigger thủ công qua EventBridge**  
   1. Mở console **Amazon EventBridge**.  
-  2. Vào **Rules** và chọn rule ETL, ví dụ:
+  2. Vào **Rules** và chọn rule ETL:
 
      ```text
-     clickstream-etl-schedule
+     SBW_ETL_HOURLY_RULE
      ```
 
   3. Chọn **Actions → Run now** để chạy rule ngay lập tức.
 
 - **C. Trigger thủ công qua Lambda console**  
-  1. Mở **Lambda Console** và chọn function ETL, ví dụ:
+  1. Mở **Lambda Console** và chọn function ETL:
 
      ```text
-     clickstream-etl-lambda
+     SBW_Lamda_ETL
      ```
 
   2. Ở tab **Test**, tạo hoặc dùng lại một test event (payload `{}` là đủ nếu code bỏ qua input).  
@@ -104,13 +104,13 @@ Chạy một số truy vấn cơ bản:
 ```sql
 -- 1. Tổng số event trong bảng fact
 SELECT COUNT(*) AS total_events
-FROM fact_events;
+FROM clickstream_events;
 ```
 
 ```sql
 -- 2. Số event theo loại (page view, product view, add-to-cart, ...)
 SELECT event_name, COUNT(*) AS total_events
-FROM fact_events
+FROM clickstream_events
 GROUP BY event_name
 ORDER BY total_events DESC;
 ```
@@ -118,12 +118,12 @@ ORDER BY total_events DESC;
 ```sql
 -- 3. Top 10 sản phẩm được xem nhiều nhất
 SELECT
-    product_id,
-    product_name,
+    context_product_id,
+    context_product_name,
     COUNT(*) AS view_count
-FROM fact_events
+FROM clickstream_events
 WHERE event_name = 'product_view'
-GROUP BY product_id, product_name
+GROUP BY context_product_id, context_product_name
 ORDER BY view_count DESC
 LIMIT 10;
 ```
@@ -133,11 +133,11 @@ Kiểm tra sâu hơn (tuỳ chọn):
 ```sql
 -- 4. Dạng funnel đơn giản: từ product view đến add-to-cart
 SELECT
-    product_id,
+    context_product_id,
     SUM(CASE WHEN event_name = 'product_view'  THEN 1 ELSE 0 END) AS product_views,
     SUM(CASE WHEN event_name = 'add_to_cart'   THEN 1 ELSE 0 END) AS add_to_cart_events
-FROM fact_events
-GROUP BY product_id
+FROM clickstream_events
+GROUP BY context_product_id
 ORDER BY product_views DESC
 LIMIT 10;
 ```
@@ -165,28 +165,28 @@ So sánh kết quả với phiên test:
    aws ssm start-session \
        --target <instance-id> \
        --document-name AWS-StartPortForwardingSession \
-       --parameters '{"portNumber":["3838"],"localPortNumber":["8080"]}'
+       --parameters '{"portNumber":["3838"],"localPortNumber":["3838"]}'
    ```
 
-   Thay `<instance-id>` bằng EC2 instance ID của Data Warehouse instance.
+   Thay `<instance-id>` bằng EC2 instance ID của Data Warehouse instance (`SBW_EC2_ShinyDWH`).
 
 3. Giữ terminal session này mở. Bạn sẽ thấy thông báo kiểu:
 
    ```text
    Starting session with SessionId: ...
-   Port 8080 opened for sessionId ...
+   Port 3838 opened for sessionId ...
    ```
 
 4. Mở trình duyệt trên máy local và truy cập:
 
    ```text
-   http://localhost:8080/
+   http://localhost:3838/
    ```
 
-   hoặc app Shiny cụ thể, ví dụ:
+   hoặc app Shiny cụ thể:
 
    ```text
-   http://localhost:8080/clickstream-analytics
+   http://localhost:3838/sbw_dashboard
    ```
 
 #### Lợi ích của Session Manager Port Forwarding

@@ -29,15 +29,16 @@ Từ **5.1 Objectives & Scope** và **5.2 Architecture Walkthrough**, bạn đã
     - Xác thực người dùng bằng **Amazon Cognito**.
 
   - **Miền ingest & data lake**:  
-    - **Amazon API Gateway (HTTP API)** làm endpoint ingest clickstream.  
-    - **Lambda Ingest** để validate và enrich event.  
-    - **S3 Raw Clickstream bucket** lưu trữ log JSON được phân vùng theo thời gian.
+    - **Amazon API Gateway (HTTP API)** (`clickstream-http-api`) làm endpoint ingest clickstream.  
+    - **Lambda Ingest** (`clickstream-lambda-ingest`) để validate và enrich event.  
+    - **S3 Raw Clickstream bucket** (`clickstream-s3-ingest`) lưu trữ log JSON được phân vùng theo thời gian.
 
   - **Miền Analytics & Data Warehouse**:  
-    - **VPC** với **public OLTP subnet** và **các private subnet cho Analytics + ETL**.  
-    - **PostgreSQL Data Warehouse trên EC2** trong Analytics private subnet.  
+    - **VPC (10.0.0.0/16)** với **public OLTP subnet (10.0.0.0/20)** và **private Analytics & ETL subnet (10.0.128.0/20)**.  
+    - **PostgreSQL OLTP trên EC2** (`SBW_EC2_WebDB`) trong public subnet.  
+    - **PostgreSQL Data Warehouse trên EC2** (`SBW_EC2_ShinyDWH`) trong private subnet.  
     - **R Shiny Server** cùng EC2 đó để hiển thị dashboard phân tích.  
-    - **Lambda ETL có gắn VPC** trong ETL private subnet.  
+    - **Lambda ETL có gắn VPC** (`SBW_Lamda_ETL`) trong private subnet.  
     - **AWS Systems Manager Session Manager** với VPC Interface Endpoints cho truy cập admin an toàn, không cần SSH vào các private instance.
 
 - Giải thích vì sao nền tảng tách biệt:
@@ -78,7 +79,7 @@ Từ **5.4 Building the Private Analytics Layer**, bạn đã:
 
 - Cấu hình **S3 Gateway VPC Endpoint**, đảm bảo rằng:
 
-  - Các private subnet **không** cần public IP hoặc NAT Gateway để truy cập S3.  
+  - Private subnet (10.0.128.0/20) **không** cần public IP hoặc NAT Gateway để truy cập S3.  
   - Traffic giữa Lambda ETL và S3 luôn chạy trên **mạng riêng nội bộ của AWS**.
 
 - Gắn **Lambda ETL** vào VPC bằng cách:
@@ -139,7 +140,7 @@ Sau khi hoàn thành workshop, nên **dọn dẹp tài nguyên** để tránh ch
 
 #### EC2 instances
 
-1. **EC2 OLTP (Public Subnet)**
+1. **EC2 OLTP (`SBW_EC2_WebDB`, Public Subnet)**
 
    - Nếu không còn cần cơ sở dữ liệu vận hành:  
      - Dừng instance để ngưng chi phí compute, hoặc  
@@ -148,7 +149,7 @@ Sau khi hoàn thành workshop, nên **dọn dẹp tài nguyên** để tránh ch
      - Chụp snapshot volume hoặc backup cuối.  
      - Dùng `pg_dump` hoặc công cụ tương tự để xuất dữ liệu quan trọng.
 
-2. **EC2 Data Warehouse + Shiny (Private Subnet)**
+2. **EC2 Data Warehouse + Shiny (`SBW_EC2_ShinyDWH`, Private Subnet)**
 
    - Nếu chỉ dùng cho workshop:  
      - Dừng hoặc terminate sau khi đã export kết quả phân tích hoặc schema cần giữ.  
@@ -159,30 +160,30 @@ Sau khi hoàn thành workshop, nên **dọn dẹp tài nguyên** để tránh ch
 
 #### Lambda functions và EventBridge rules
 
-1. **Lambda Ingest**
+1. **Lambda Ingest (`clickstream-lambda-ingest`)**
 
    - Nếu bạn không còn gửi clickstream event:  
      - Có thể xoá function để giao diện console gọn gàng hơn.  
    - Nếu vẫn muốn dùng để thử nghiệm tiếp:  
      - Giữ lại, nhưng cân nhắc tạm thời tắt frontend hoặc sửa cấu hình.
 
-2. **Lambda ETL**
+2. **Lambda ETL (`SBW_Lamda_ETL`)**
 
    - Nếu EC2 Data Warehouse đã dừng hoặc xoá:  
      - Disable hoặc xoá Lambda ETL (và EventBridge rule đi kèm) để tránh các lần invoke thất bại.
 
-3. **EventBridge ETL schedule**
+3. **EventBridge ETL schedule (`SBW_ETL_HOURLY_RULE`)**
 
    - Vào **Amazon EventBridge → Rules**.  
-   - Disable hoặc xoá rule (ví dụ `clickstream-etl-schedule`) để nó không kích hoạt ETL nữa.
+   - Disable hoặc xoá rule (`SBW_ETL_HOURLY_RULE`) để nó không kích hoạt ETL nữa.
 
 #### S3 buckets và dữ liệu
 
-1. **Raw Clickstream S3 bucket**
+1. **Raw Clickstream S3 bucket (`clickstream-s3-ingest`)**
 
    - Quyết định có giữ lại dữ liệu raw hay không:
 
-     - Với **lab ngắn hạn**, bạn có thể xoá các prefix `events/YYYY/MM/DD/HH/` được tạo trong lúc test.  
+     - Với **lab ngắn hạn**, bạn có thể xoá các prefix `events/YYYY/MM/DD/` được tạo trong lúc test.  
      - Với **dự án dài hạn**, giữ lại bucket nhưng:  
        - Cân nhắc bật **S3 lifecycle policy** để:  
          - Chuyển dữ liệu cũ sang storage class rẻ hơn, hoặc  
@@ -252,8 +253,8 @@ Phần lớn alarm ở trạng thái `OK` hoặc `Insufficient data`, cho thấy
 1. **Lambda execution roles**
 
    - Rà soát các IAM role tạo cho:  
-     - Lambda Ingest.  
-     - Lambda ETL.  
+     - Lambda Ingest (`clickstream-lambda-ingest`).  
+     - Lambda ETL (`SBW_Lamda_ETL`).  
 
    - Nếu không còn cần:  
      - Gỡ các policy đính kèm.  
@@ -275,7 +276,7 @@ Phần lớn alarm ở trạng thái `OK` hoặc `Insufficient data`, cho thấy
 
    - Xoá các user test hoặc xoá toàn bộ User Pool nếu nó chỉ phục vụ workshop.
 
-3. **API Gateway HTTP API**
+3. **API Gateway HTTP API (`clickstream-http-api`)**
 
    - Xoá API ingest clickstream nếu không còn dùng, nhất là khi nó được tạo riêng cho lab.
 

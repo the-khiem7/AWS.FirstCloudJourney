@@ -29,15 +29,16 @@ From **5.1 Objectives & Scope** and **5.2 Architecture Walkthrough**, you learne
     - User authentication through **Amazon Cognito**.
 
   - **Ingestion & data lake domain**:  
-    - **Amazon API Gateway (HTTP API)** as the clickstream ingestion endpoint.  
-    - **Lambda Ingest** function validating and enriching events.  
-    - **S3 Raw Clickstream bucket** storing time-partitioned JSON logs.
+    - **Amazon API Gateway (HTTP API)** (`clickstream-http-api`) as the clickstream ingestion endpoint.  
+    - **Lambda Ingest** function (`clickstream-lambda-ingest`) validating and enriching events.  
+    - **S3 Raw Clickstream bucket** (`clickstream-s3-ingest`) storing time-partitioned JSON logs.
 
   - **Analytics & Data Warehouse domain**:  
-    - **VPC** with a **public OLTP subnet**, and **private Analytics + ETL subnets**.  
-    - **PostgreSQL Data Warehouse on EC2** in the Analytics private subnet.  
+    - **VPC (10.0.0.0/16)** with a **public OLTP subnet (10.0.0.0/20)**, and **private Analytics & ETL subnet (10.0.128.0/20)**.  
+    - **PostgreSQL OLTP on EC2** (`SBW_EC2_WebDB`) in the public subnet.  
+    - **PostgreSQL Data Warehouse on EC2** (`SBW_EC2_ShinyDWH`) in the private subnet.  
     - **R Shiny Server** co-located on the same EC2 instance for analytics dashboards.  
-    - **VPC-enabled ETL Lambda** in the ETL private subnet.  
+    - **VPC-enabled ETL Lambda** (`SBW_Lamda_ETL`) in the private subnet.  
     - **AWS Systems Manager Session Manager** with VPC Interface Endpoints for secure, zero-SSH admin access to private instances.
 
 - Explain why the platform separates:
@@ -78,7 +79,7 @@ From **5.4 Building the Private Analytics Layer**, you:
 
 - Configured a **Gateway VPC Endpoint for S3**, ensuring that:
 
-  - Private subnets **do not** require public IPs or a NAT Gateway to reach S3.  
+  - The private subnet (10.0.128.0/20) **does not** require public IPs or a NAT Gateway to reach S3.  
   - Traffic between ETL Lambda and S3 stays on the **AWS private network**.
 
 - Attached the **ETL Lambda** to the VPC by:
@@ -139,7 +140,7 @@ After completing the workshop, it is recommended to **clean up resources** to av
 
 #### EC2 instances
 
-1. **OLTP EC2 instance (Public Subnet)**
+1. **OLTP EC2 instance (`SBW_EC2_WebDB`, Public Subnet)**
 
    - If you no longer need the operational database:
      - Stop the instance to pause compute charges, or  
@@ -148,7 +149,7 @@ After completing the workshop, it is recommended to **clean up resources** to av
      - Taking a final backup or snapshot of the volume.  
      - Exporting a logical dump (e.g., `pg_dump`) of important data.
 
-2. **Data Warehouse + Shiny EC2 instance (Private Subnet)**
+2. **Data Warehouse + Shiny EC2 instance (`SBW_EC2_ShinyDWH`, Private Subnet)**
 
    - If you only needed this instance for the workshop:
      - Stop or terminate it after confirming that you have exported any necessary analytical results or schema definitions.  
@@ -159,29 +160,29 @@ After completing the workshop, it is recommended to **clean up resources** to av
 
 #### Lambda functions and EventBridge rules
 
-1. **Lambda Ingest function**
+1. **Lambda Ingest function (`clickstream-lambda-ingest`)**
 
    - If you will not send more clickstream events:
      - Consider deleting the function to avoid confusion in the console.  
    - Otherwise, you can keep it for future experimentation.
 
-2. **ETL Lambda function**
+2. **ETL Lambda function (`SBW_Lamda_ETL`)**
 
    - If the Data Warehouse EC2 instance is stopped or terminated:
      - Disable or delete the ETL Lambda (and its EventBridge rule) to avoid failing invocations.  
 
-3. **EventBridge ETL schedule**
+3. **EventBridge ETL schedule (`SBW_ETL_HOURLY_RULE`)**
 
    - Navigate to **Amazon EventBridge → Rules**.  
-   - Disable or delete the scheduling rule (for example `clickstream-etl-schedule`) so it no longer triggers ETL runs.
+   - Disable or delete the scheduling rule (`SBW_ETL_HOURLY_RULE`) so it no longer triggers ETL runs.
 
 #### S3 buckets and data
 
-1. **Raw Clickstream S3 bucket**
+1. **Raw Clickstream S3 bucket (`clickstream-s3-ingest`)**
 
    - Decide whether the raw clickstream data should be retained:
 
-     - For **short-lived labs**, you can safely delete the `events/YYYY/MM/DD/HH/` prefixes created during testing.  
+     - For **short-lived labs**, you can safely delete the `events/YYYY/MM/DD/` prefixes created during testing.  
      - For **ongoing projects**, keep the bucket but:
        - Enable S3 **lifecycle policies** if needed (e.g., transition older data to cheaper storage classes, or delete after N days).
 
@@ -249,8 +250,8 @@ Most alarms are in `OK` or `Insufficient data` state, indicating that the system
 1. **Lambda execution roles**
 
    - Review IAM roles created for:
-     - Lambda Ingest.  
-     - ETL Lambda.  
+     - Lambda Ingest (`clickstream-lambda-ingest`).  
+     - ETL Lambda (`SBW_Lamda_ETL`).  
 
    - If they are no longer needed:
      - Detach any inline or attached policies.  
@@ -271,7 +272,7 @@ Most alarms are in `OK` or `Insufficient data` state, indicating that the system
 
    - Remove test users or delete the entire User Pool if it was dedicated to this environment.
 
-3. **API Gateway HTTP API**
+3. **API Gateway HTTP API (`clickstream-http-api`)**
 
    - Delete the clickstream ingestion API if you no longer need it, especially if it was created only for the lab.
 

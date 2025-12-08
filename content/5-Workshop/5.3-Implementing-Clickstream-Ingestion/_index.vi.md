@@ -76,7 +76,7 @@ Các đặc điểm chính:
 
 **Hình 5-5: API Gateway route cho POST /clickstream**
 
-Ảnh chụp màn hình cho thấy cấu hình HTTP API cho endpoint ingest clickstream.  
+Ảnh chụp màn hình cho thấy cấu hình HTTP API (`clickstream-http-api`) cho endpoint ingest clickstream.  
 Resource `/clickstream` expose một route `POST` duy nhất, được tích hợp với Lambda `clickstream-lambda-ingest`.  
 Trong workshop này không cấu hình authorizer để nội dung tập trung vào ingest dữ liệu thay vì xác thực.
 
