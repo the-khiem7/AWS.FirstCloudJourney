@@ -5,31 +5,105 @@ chapter: false
 pre: " <b> 5. </b> "
 ---
 
-# Đảm bảo truy cập Hybrid an toàn đến S3 bằng cách sử dụng VPC endpoint
+# Nền tảng Phân tích Clickstream cho Thương mại Điện tử
 
-#### Tổng quan
+## Tổng quan
 
-**AWS PrivateLink** cung cấp kết nối riêng tư, khả năng mở rộng cao và bảo mật giữa VPC của bạn với các dịch vụ AWS được hỗ trợ, cũng như với các dịch vụ do bên thứ ba hoặc chính bạn cung cấp. Lưu lượng luôn đi trên hạ tầng mạng nội bộ của AWS thay vì Internet công cộng, giúp giảm bề mặt tấn công và đơn giản hóa bài toán bảo mật.
+Workshop này triển khai **Nền tảng Phân tích Clickstream theo Batch** cho website thương mại điện tử bán sản phẩm máy tính.
 
-Trong workshop này, bạn sẽ học cách thiết kế và triển khai một kiến trúc **hybrid** cho phép truy cập an toàn đến **Amazon S3** từ:
+Hệ thống thu thập sự kiện clickstream từ frontend, lưu trữ dữ liệu JSON thô trong **Amazon S3**, xử lý sự kiện qua ETL theo lịch (AWS Lambda + EventBridge), và tải dữ liệu phân tích vào **PostgreSQL Data Warehouse** chuyên dụng trên EC2.
 
-- Các workload chạy trong VPC (ứng dụng, batch job, analytic job,…).  
-- Hạ tầng tại chỗ (on‑premises) kết nối lên AWS thông qua **AWS Direct Connect** hoặc **VPN**.
+Dashboard phân tích được xây dựng bằng **R Shiny**, triển khai trong private subnet và truy vấn trực tiếp Data Warehouse.
 
-Bạn sẽ thực hành tạo, cấu hình và kiểm thử các loại **VPC endpoint** khác nhau để truy cập S3 mà **không cần dùng Internet Gateway hoặc NAT Gateway**.
+Nền tảng được thiết kế với:
 
-Cụ thể, chúng ta sẽ làm việc với **hai loại endpoint** để truy cập Amazon S3:
+- Tách bạch rõ ràng giữa khối lượng công việc **OLTP và Analytics**
+- Backend phân tích hoàn toàn riêng tư (không có DW công khai)
+- Các thành phần AWS serverless tiết kiệm chi phí, có khả năng mở rộng
+- Tối thiểu các thành phần di động để đảm bảo độ tin cậy và đơn giản
+- Truy cập quản trị Zero-SSH qua **AWS Systems Manager Session Manager** vào DW riêng tư
 
-- **Gateway endpoint** – Cho phép VPC gửi lưu lượng đến Amazon S3 bằng cách thêm thành phần “điểm cuối” vào **route table** của các subnet. Lưu lượng từ subnet tới S3 sẽ được định tuyến nội bộ thông qua endpoint này mà không đi qua Internet.  
-- **Interface endpoint** – Tạo một hoặc nhiều **Elastic Network Interface (ENI)** trong VPC, mỗi ENI có private IP và được liên kết với một dịch vụ được hỗ trợ thông qua **AWS PrivateLink**. Lưu lượng tới S3 sử dụng endpoint này sẽ được resolve qua DNS và đi hoàn toàn trên mạng riêng của AWS, kể cả khi được truy cập từ môi trường on‑premises thông qua Direct Connect hoặc VPN.
+---
 
-Sau khi hoàn thành workshop, bạn sẽ hiểu rõ sự khác nhau giữa hai loại endpoint, thời điểm nên sử dụng từng loại, cũng như các tác động về bảo mật và chi phí khi thiết kế đường truy cập hybrid đến S3.
+## Tổng quan Kiến trúc
 
-#### Nội dung
+### 1. User-Facing Domain
 
-1. [Tổng quan về workshop](5.1-Workshop-overview/)
-2. [Chuẩn bị](5.2-Prerequiste/)
-3. [Truy cập đến S3 từ VPC](5.3-S3-vpc/)
-4. [Truy cập đến S3 từ TTDL On-premises](5.4-S3-onprem/)
-5. [VPC Endpoint Policies (làm thêm)](5.5-Policy/)
-6. [Dọn dẹp tài nguyên](5.6-Cleanup/)
+**Frontend**: Next.js trên AWS Amplify với CloudFront CDN  
+**Xác thực**: Amazon Cognito User Pool  
+**OLTP Database**: PostgreSQL trên EC2 (Public Subnet)
+
+### 2. Ingestion & Data Lake Domain
+
+**API Gateway**: HTTP API endpoint cho sự kiện clickstream  
+**Lambda Ingest**: Xác thực và ghi JSON thô vào S3  
+**S3 Raw Bucket**: Lưu trữ dữ liệu clickstream phân vùng theo thời gian
+
+### 3. Analytics & Data Warehouse Domain
+
+**Lambda ETL**: VPC-enabled, lập lịch bởi EventBridge  
+**Data Warehouse**: PostgreSQL trên EC2 (Private Subnet)  
+**R Shiny Server**: Dashboard tương tác (Private Subnet)  
+**Admin Access**: AWS Systems Manager Session Manager (không SSH)
+
+---
+
+## Tech Stack
+
+### Dịch vụ AWS
+- **AWS Amplify Hosting** — Host Next.js (SSR + static assets)
+- **Amazon CloudFront** — Phân phối CDN toàn cầu
+- **Amazon Cognito** — Xác thực và quản lý danh tính người dùng
+- **Amazon S3** — Static assets + dữ liệu clickstream thô
+- **Amazon API Gateway (HTTP API)** — Endpoint thu thập sự kiện
+- **AWS Lambda** — Serverless compute cho ingestion & ETL
+- **Amazon EventBridge** — Lập lịch ETL triggers
+- **Amazon EC2** — OLTP DB + Data Warehouse + Shiny
+- **Amazon VPC** — Cách ly mạng (public & private subnets)
+- **AWS IAM** — Kiểm soát truy cập
+- **Amazon CloudWatch** — Logging & monitoring
+- **AWS Systems Manager** — Admin tunneling vào private EC2
+
+### Cơ sở dữ liệu
+- **PostgreSQL (OLTP)** — Cơ sở dữ liệu vận hành
+- **PostgreSQL (DW)** — Data warehouse phân tích
+
+### Analytics
+- **R Shiny Server** — Dashboard tương tác
+- **Custom ETL** — Lambda chuyển đổi S3 JSON → bảng SQL
+
+---
+
+## Tính năng Chính
+
+- **Batch clickstream ingestion** qua API Gateway + Lambda + S3  
+- **Serverless ETL** với EventBridge scheduling  
+- **Tách biệt OLTP & Analytics** workloads  
+- **Private analytics backend** — hoàn toàn cách ly  
+- **Zero-SSH admin access** qua Session Manager  
+- **Tối ưu chi phí** — Không NAT Gateway, dùng S3 Gateway Endpoint  
+- **Kết nối PostgreSQL trực tiếp** từ Amplify dùng Prisma
+
+---
+
+## Yêu cầu Tiên quyết
+
+Trước khi bắt đầu các phần chi tiết (5.1–5.6), bạn nên có:
+
+- Hiểu biết cơ bản về **dịch vụ AWS** (EC2, S3, Lambda, API Gateway, VPC, IAM)
+- Kiến thức thực hành về **SQL** và **PostgreSQL**
+- Hiểu biết về **ứng dụng web** (HTTP, JSON, REST APIs)
+- Tài khoản AWS với quyền tạo VPC endpoints, Lambda functions, EC2 instances, S3 buckets, và EventBridge rules
+
+> **Lưu ý**: Workshop này giả định rằng hạ tầng cốt lõi (VPC, subnets, EC2, Lambda, API Gateway, S3) đã được cung cấp sẵn qua Infrastructure-as-Code (Terraform/CloudFormation).
+
+---
+
+## Nội dung
+
+1. [Mục tiêu & Phạm vi](5.1-Objectives-&-Scope) — Bối cảnh nghiệp vụ và mục tiêu học tập
+2. [Kiến trúc Chi tiết](5.2-Architecture-Walkthrough) — Kiến trúc kỹ thuật chi tiết
+3. [Triển khai Thu thập Clickstream](5.3-Implementing-Clickstream-Ingestion) — Thiết lập API Gateway + Lambda
+4. [Xây dựng Lớp Phân tích Riêng tư](5.4-Building-the-Private-Analytics-Layer) — ETL Lambda + Data Warehouse
+5. [Trực quan hóa bằng Shiny Dashboards](5.5-Visualizing-Analytics-with-Shiny-Dashboards) — Triển khai R Shiny
+6. [Tổng kết & Dọn dẹp](5.6-Summary-&-Clean-up) — Bài học chính và dọn dẹp tài nguyên

@@ -83,3 +83,135 @@ The private subnet route table:
 - Does **not** have any `0.0.0.0/0` route and does **not** use a NAT Gateway.
 
 ![Figure 5-4: VPC network layout for OLTP and Analytics](/images/5-2-vpc-network.png)
+
+---
+
+### Networking & Security Design
+
+#### VPC Layout
+
+- **VPC CIDR**: `10.0.0.0/16`
+- **Internet Gateway (IGW)**: Attached to VPC, provides bidirectional connectivity for public subnet resources
+
+**Subnets:**
+
+1. **Public Subnet (10.0.1.0/24) - OLTP Layer**
+   - EC2 PostgreSQL OLTP (with public IP)
+   - Routes internet traffic via Internet Gateway
+   - Allows inbound from Amplify and admin IPs
+   - Allows outbound for updates and external APIs
+
+2. **Private Subnet 1 (10.0.2.0/24) - Analytics Layer**
+   - EC2 Data Warehouse (PostgreSQL) - no public IP
+   - EC2 R Shiny Server - no public IP
+   - SSM Interface Endpoint for Session Manager
+   - No direct internet access (no route to IGW)
+   - Fully isolated from public internet
+
+3. **Private Subnet 2 (10.0.3.0/24) - ETL Layer**
+   - Lambda ETL (VPC-enabled) - no public IP
+   - S3 Gateway VPC Endpoint for private S3 access
+   - No direct internet access (no route to IGW)
+
+#### Routing Tables
+
+**Public Route Table** (Public Subnet):
+- `10.0.0.0/16` → Local (VPC internal)
+- `0.0.0.0/0` → Internet Gateway (default route)
+
+**Private Route Table 1** (Analytics Subnet):
+- `10.0.0.0/16` → Local (VPC internal only)
+- **No default route to Internet Gateway**
+- Admin access via SSM Interface Endpoints
+
+**Private Route Table 2** (ETL Subnet):
+- `10.0.0.0/16` → Local (VPC internal)
+- S3 prefix list → S3 Gateway VPC Endpoint
+- **No default route to Internet Gateway**
+
+> **Key Design**: No NAT Gateway deployed. Private components reach S3 via Gateway VPC Endpoint, eliminating NAT costs while maintaining security.
+
+#### Security Groups
+
+**SG-OLTP:**
+- Inbound: `5432/tcp` from Amplify/trusted IPs, `22/tcp` from admin IP
+- Outbound: default (all allowed)
+
+**SG-DW:**
+- Inbound: `5432/tcp` from Lambda ETL SG and Shiny SG
+- Outbound: `443/tcp` to SSM interface endpoints
+- Admin access via Session Manager (no inbound SSH)
+
+**SG-Shiny:**
+- Inbound: restricted to admin/VPN only
+- Outbound: allowed to DW (localhost/private IP)
+
+**SG-ETL-Lambda:**
+- No inbound (Lambda doesn't accept inbound)
+- Outbound: allowed to S3 endpoint + DW SG
+
+#### External AWS Services
+
+Services outside VPC that interact with infrastructure:
+
+- **AWS Amplify Hosting**: Connects to OLTP EC2 via Internet Gateway using Prisma
+- **Amazon CloudFront**: Distributes static assets globally
+- **Amazon Cognito**: Regional auth service, no VPC interaction
+- **Amazon API Gateway**: Entry point for clickstream events, invokes Lambda Ingest
+- **Amazon EventBridge**: Triggers scheduled ETL jobs (Lambda ETL in VPC)
+- **AWS Systems Manager**: Admin access via VPC Interface Endpoints (no SSH)
+
+---
+
+### Data Flow Summary
+
+**User Interaction Flow:**
+1. User accesses via CloudFront → Amplify Hosting
+2. User authenticates via Cognito
+3. Amplify SSR/API queries OLTP EC2 via Internet Gateway using Prisma
+
+**Clickstream Ingestion:**
+4. Frontend sends events to API Gateway
+5. Lambda Ingest writes raw JSON to S3 Raw Clickstream Bucket
+
+**Batch ETL Processing:**
+6. EventBridge (cron schedule, e.g. every 30 min) triggers Lambda ETL
+7. Lambda ETL (VPC-enabled in Private Subnet 2):
+   - Reads raw files from S3 via Gateway VPC Endpoint
+   - Cleans, normalizes, sessionizes events
+   - Connects to PostgreSQL DW (Private Subnet 1) via VPC routing
+   - Inserts processed data into DW tables
+
+**Analytics Access:**
+8. R Shiny Server (same EC2 as DW) connects via localhost
+9. Admin uses AWS Systems Manager Session Manager port-forwarding via SSM interface endpoints
+
+---
+
+### Key Features
+
+- Batch clickstream ingestion (API Gateway + Lambda + S3)  
+- Serverless ETL with EventBridge scheduling  
+- Clear OLTP vs Analytics separation  
+- R Shiny dashboards (fully private)  
+- Zero-SSH admin via SSM Session Manager  
+- Cost-optimized (no NAT Gateway, S3 Gateway Endpoint, Lambda compute)  
+- Direct PostgreSQL connectivity from Amplify using Prisma
+
+---
+
+### Tech Stack Summary
+
+**AWS Services:**
+- AWS Amplify Hosting, CloudFront, Cognito
+- Amazon S3, API Gateway, Lambda, EventBridge
+- Amazon EC2, VPC, IAM, CloudWatch
+- AWS Systems Manager (Session Manager + VPC Endpoints)
+
+**Databases:**
+- PostgreSQL (EC2 OLTP) - operational database
+- PostgreSQL (EC2 DW) - analytical database
+
+**Analytics:**
+- R Shiny Server - interactive dashboards
+- Custom ETL logic - Lambda transforming S3 JSON → SQL tables

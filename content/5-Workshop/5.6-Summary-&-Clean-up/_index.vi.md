@@ -37,7 +37,8 @@ Từ **5.1 Objectives & Scope** và **5.2 Architecture Walkthrough**, bạn đã
     - **VPC** với **public OLTP subnet** và **các private subnet cho Analytics + ETL**.  
     - **PostgreSQL Data Warehouse trên EC2** trong Analytics private subnet.  
     - **R Shiny Server** cùng EC2 đó để hiển thị dashboard phân tích.  
-    - **Lambda ETL có gắn VPC** trong ETL private subnet.
+    - **Lambda ETL có gắn VPC** trong ETL private subnet.  
+    - **AWS Systems Manager Session Manager** với VPC Interface Endpoints cho truy cập admin an toàn, không cần SSH vào các private instance.
 
 - Giải thích vì sao nền tảng tách biệt:
 
@@ -108,10 +109,11 @@ Từ **5.5 Visualizing Analytics with Shiny Dashboards**, bạn đã:
   - Top sản phẩm được xem nhiều nhất.  
   - Các chỉ số funnel đơn giản.
 
-- Truy cập **R Shiny dashboards** chạy trên EC2 private cùng với Data Warehouse bằng cách forward port an toàn:
+- Truy cập **R Shiny dashboards** chạy trên EC2 private cùng với Data Warehouse bằng cách sử dụng **AWS Systems Manager Session Manager port forwarding**:
 
-  - SSH tunnel, hoặc  
-  - AWS Systems Manager Session Manager.
+  - Không cần SSH key hay bastion host.  
+  - Tunnel hoàn toàn mã hóa qua HTTPS thông qua VPC Interface Endpoints.  
+  - Kiểm soát truy cập qua IAM với đầy đủ audit trail.
 
 - Khám phá các dashboard mô tả:
 
@@ -201,7 +203,17 @@ Sau khi hoàn thành workshop, nên **dọn dẹp tài nguyên** để tránh ch
    - Nếu VPC vẫn dùng chung cho các workload khác:  
      - Có thể giữ lại để dùng tiếp.
 
-2. **Route table, subnet, VPC**
+2. **SSM Interface VPC Endpoints**
+
+   - Xoá các VPC Interface Endpoints cho AWS Systems Manager nếu không còn cần:  
+     - `com.amazonaws.<region>.ssm`  
+     - `com.amazonaws.<region>.ssmmessages`  
+     - `com.amazonaws.<region>.ec2messages`  
+   - Vào **VPC** → **Endpoints**, chọn từng endpoint và bấm **Actions** → **Delete endpoint**.
+
+   > **Lưu ý**: Interface Endpoints tính phí theo giờ (~$0.01/giờ mỗi endpoint mỗi AZ). Gateway Endpoints cho S3 miễn phí.
+
+3. **Route table, subnet, VPC**
 
    - Với VPC dành riêng cho lab:  
      - Có thể xoá toàn bộ VPC (xoá luôn subnet, route table, endpoint đi kèm) **sau khi** chắc chắn không còn EC2, RDS hay tài nguyên quan trọng nào phụ thuộc.  

@@ -37,7 +37,8 @@ From **5.1 Objectives & Scope** and **5.2 Architecture Walkthrough**, you learne
     - **VPC** with a **public OLTP subnet**, and **private Analytics + ETL subnets**.  
     - **PostgreSQL Data Warehouse on EC2** in the Analytics private subnet.  
     - **R Shiny Server** co-located on the same EC2 instance for analytics dashboards.  
-    - **VPC-enabled ETL Lambda** in the ETL private subnet.
+    - **VPC-enabled ETL Lambda** in the ETL private subnet.  
+    - **AWS Systems Manager Session Manager** with VPC Interface Endpoints for secure, zero-SSH admin access to private instances.
 
 - Explain why the platform separates:
 
@@ -108,10 +109,11 @@ From **5.5 Visualizing Analytics with Shiny Dashboards**, you:
   - Top viewed products.  
   - Simple funnel-like metrics.
 
-- Accessed **R Shiny dashboards** running on the same private EC2 instance as the Data Warehouse using secure port forwarding:
+- Accessed **R Shiny dashboards** running on the same private EC2 instance as the Data Warehouse using **AWS Systems Manager Session Manager port forwarding**:
 
-  - SSH tunnels, or  
-  - AWS Systems Manager Session Manager.
+  - No SSH keys or bastion hosts required.  
+  - Fully encrypted tunnels over HTTPS via VPC Interface Endpoints.  
+  - IAM-based access control with full audit trails.
 
 - Explored dashboards that represent:
 
@@ -198,7 +200,17 @@ After completing the workshop, it is recommended to **clean up resources** to av
    - If the VPC remains active and other workloads may benefit from private S3 access:
      - It can be left in place.
 
-2. **Route tables, subnets, and VPC**
+2. **SSM Interface VPC Endpoints**
+
+   - Delete the VPC Interface Endpoints for AWS Systems Manager if no longer needed:
+     - `com.amazonaws.<region>.ssm`  
+     - `com.amazonaws.<region>.ssmmessages`  
+     - `com.amazonaws.<region>.ec2messages`  
+   - Navigate to **VPC** → **Endpoints**, select each endpoint, and choose **Actions** → **Delete endpoint**.
+
+   > **Note**: Interface Endpoints incur hourly charges (~$0.01/hour per endpoint per AZ). Gateway Endpoints for S3 are free.
+
+3. **Route tables, subnets, and VPC**
 
    - For a dedicated lab VPC:
      - Consider deleting the entire VPC (which will also remove associated subnets, route tables, and endpoints) **only after** ensuring no active EC2, RDS, or other critical resources depend on it.  

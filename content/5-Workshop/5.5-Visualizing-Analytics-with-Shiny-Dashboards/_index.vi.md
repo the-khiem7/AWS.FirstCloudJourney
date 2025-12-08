@@ -96,8 +96,8 @@ Việc kiểm tra log giúp đảm bảo Data Warehouse đã có dữ liệu m�
 
 Sau khi ETL chạy thành công, hãy xác minh Data Warehouse đã được cập nhật.
 
-1. Kết nối vào **EC2 Data Warehouse** bằng **Session Manager** hoặc SSH (qua bastion host hoặc VPN).  
-2. Từ trong instance, dùng `psql` hoặc một client SQL bất kỳ để kết nối tới PostgreSQL DW.
+1. Kết nối vào **EC2 Data Warehouse** bằng **AWS Systems Manager Session Manager** (không cần SSH key hay bastion host).  
+2. Từ shell của Session Manager, dùng `psql` hoặc một client SQL bất kỳ để kết nối tới PostgreSQL DW.
 
 Chạy một số truy vấn cơ bản:
 
@@ -152,48 +152,49 @@ So sánh kết quả với phiên test:
 
 ### Truy cập Shiny dashboards (từ EC2 private)
 
-**R Shiny Server** chạy trên instance EC2 private chung với Data Warehouse và **không có public IP**. Để truy cập an toàn, bạn thường sử dụng **port forwarding**.
+**R Shiny Server** chạy trên instance EC2 private chung với Data Warehouse và **không có public IP**. Để truy cập an toàn, sử dụng **AWS Systems Manager Session Manager port forwarding**—không cần SSH key hay bastion host.
 
-#### Tuỳ chọn A – Port forwarding qua SSH
+#### Truy cập Shiny qua Session Manager Port Forwarding
 
-1. Đảm bảo bạn có quyền SSH tới EC2 (trực tiếp hoặc qua bastion host).  
-2. Trên máy local, chạy lệnh SSH để forward một port local (ví dụ 3838) tới Shiny Server trên EC2:
+1. Đảm bảo **Session Manager plugin** cho AWS CLI đã được cài đặt trên máy local của bạn.  
+   - Hướng dẫn cài đặt: [AWS Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
+
+2. Chạy lệnh sau để forward cổng Shiny (mặc định 3838) về máy local:
 
    ```bash
-   ssh -i /path/to/your-key.pem        -L 3838:localhost:3838        ec2-user@<bastion-or-dw-ec2-host>
+   aws ssm start-session \
+       --target <instance-id> \
+       --document-name AWS-StartPortForwardingSession \
+       --parameters '{"portNumber":["3838"],"localPortNumber":["8080"]}'
    ```
 
-3. Giữ session SSH này mở.  
+   Thay `<instance-id>` bằng EC2 instance ID của Data Warehouse instance.
+
+3. Giữ terminal session này mở. Bạn sẽ thấy thông báo kiểu:
+
+   ```text
+   Starting session with SessionId: ...
+   Port 8080 opened for sessionId ...
+   ```
+
 4. Mở trình duyệt trên máy local và truy cập:
 
    ```text
-   http://localhost:3838/
+   http://localhost:8080/
    ```
 
-   hoặc app cụ thể, ví dụ:
+   hoặc app Shiny cụ thể, ví dụ:
 
    ```text
-   http://localhost:3838/clickstream-analytics
+   http://localhost:8080/clickstream-analytics
    ```
 
-#### Tuỳ chọn B – AWS Systems Manager Session Manager (port forwarding)
+#### Lợi ích của Session Manager Port Forwarding
 
-Nếu không muốn mở SSH từ Internet, bạn có thể dùng **Session Manager** với port forwarding:
-
-1. Cài và cấu hình **Session Manager plugin** cho AWS CLI.  
-2. Dùng lệnh tương tự:
-
-   ```bash
-   aws ssm start-session        --target <instance-id>        --document-name AWS-StartPortForwardingSession        --parameters '{"portNumber":["3838"],"localPortNumber":["3838"]}'
-   ```
-
-3. Tương tự SSH, mở trình duyệt và truy cập:
-
-   ```text
-   http://localhost:3838/
-   ```
-
-Tham khảo thêm tài liệu AWS nếu cần các bước chi tiết.
+- **Không phơi bày SSH**: EC2 private không cần inbound SSH rule hay public IP.  
+- **Không cần bastion host**: Loại bỏ nhu cầu quản lý và bảo mật jump server.  
+- **Kiểm soát truy cập qua IAM**: Quyền được quản lý bằng IAM policy, với đầy đủ audit trail trong CloudTrail.  
+- **Tunnel mã hóa**: Toàn bộ traffic được mã hóa qua HTTPS, luôn ở trong mạng AWS thông qua VPC Interface Endpoints.
 
 ---
 

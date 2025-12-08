@@ -96,8 +96,8 @@ Checking these logs helps ensure that the Data Warehouse contains fresh data bef
 
 Once the ETL reports success, verify that the Data Warehouse has been updated.
 
-1. Connect to the **Data Warehouse EC2 instance** using **Session Manager** or SSH (via a bastion host or VPN).  
-2. From within the instance, connect to PostgreSQL DW using `psql` or a graphical client.
+1. Connect to the **Data Warehouse EC2 instance** using **AWS Systems Manager Session Manager** (no SSH keys or bastion hosts required).  
+2. From within the Session Manager shell, connect to PostgreSQL DW using `psql` or a graphical client:
 
 Run basic checks like:
 
@@ -152,53 +152,49 @@ Compare these numbers with your test session:
 
 ### Accessing the Shiny dashboards (from a private EC2 instance)
 
-The **R Shiny Server** runs on the same private EC2 instance as the Data Warehouse, without a public IP. To access it securely, you typically use **port forwarding**.
+The **R Shiny Server** runs on the same private EC2 instance as the Data Warehouse, without a public IP. To access it securely, use **AWS Systems Manager Session Manager port forwarding**—no SSH keys or bastion hosts required.
 
-#### Option A – Port forwarding via SSH
+#### Accessing Shiny via Session Manager Port Forwarding
 
-1. Ensure you have SSH access to the EC2 instance (either directly from a bastion host or using an SSH client that can reach the VPC).  
-2. On your local machine, run an SSH command to forward a local port (for example, 3838) to the Shiny Server on the EC2 instance:
+1. Ensure the **Session Manager plugin** for the AWS CLI is installed on your local machine.  
+   - Installation instructions: [AWS Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
 
-   ```bash
-   ssh -i /path/to/your-key.pem \
-       -L 3838:localhost:3838 \
-       ec2-user@<bastion-or-dw-ec2-host>
-   ```
-
-3. Keep this SSH session open.  
-4. Open a browser on your local machine and navigate to:
-
-   ```text
-   http://localhost:3838/
-   ```
-
-   or to the specific app, for example:
-
-   ```text
-   http://localhost:3838/clickstream-analytics
-   ```
-
-#### Option B – AWS Systems Manager Session Manager (port forwarding)
-
-If you prefer not to open SSH from the public Internet, you can use **Session Manager** with port forwarding:
-
-1. Install and configure the **Session Manager plugin** for the AWS CLI.  
-2. Use a command similar to:
+2. Run the following command to forward the Shiny port (default 3838) to your local machine:
 
    ```bash
    aws ssm start-session \
        --target <instance-id> \
        --document-name AWS-StartPortForwardingSession \
-       --parameters '{"portNumber":["3838"],"localPortNumber":["3838"]}'
+       --parameters '{"portNumber":["3838"],"localPortNumber":["8080"]}'
    ```
 
-3. As with SSH, open your browser and go to:
+   Replace `<instance-id>` with the EC2 instance ID of your Data Warehouse instance.
+
+3. Keep this terminal session open. You should see a message like:
 
    ```text
-   http://localhost:3838/
+   Starting session with SessionId: ...
+   Port 8080 opened for sessionId ...
    ```
 
-Consult the AWS documentation for exact steps if needed.
+4. Open a browser on your local machine and navigate to:
+
+   ```text
+   http://localhost:8080/
+   ```
+
+   or to the specific Shiny app, for example:
+
+   ```text
+   http://localhost:8080/clickstream-analytics
+   ```
+
+#### Benefits of Session Manager Port Forwarding
+
+- **No SSH exposure**: The private EC2 instance does not need inbound SSH rules or public IP addresses.  
+- **No bastion hosts**: Eliminates the need to manage and secure jump servers.  
+- **IAM-based access control**: Permissions are managed through IAM policies, with full audit trails in CloudTrail.  
+- **Encrypted tunnels**: All traffic is encrypted over HTTPS, staying within the AWS network via VPC Interface Endpoints.
 
 ---
 

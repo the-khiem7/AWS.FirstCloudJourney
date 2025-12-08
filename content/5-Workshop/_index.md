@@ -6,42 +6,60 @@ pre: " <b> 5. </b> "
 ---
 
 # Clickstream Analytics Platform for E-Commerce
+ 
+![Architecture](https://raw.githubusercontent.com/the-khiem7/AWS.FirstCloudJourney/main/static/images/workshop/architecture.png)
 
 #### Overview
 
-This workshop walks through a **Batch-based Clickstream Analytics Platform** for an e-commerce website that sells computer products.
+This workshop implements a **Batch-Based Clickstream Analytics Platform** for an e-commerce website selling computer products.
 
-You will see how clickstream events:
+The system collects clickstream events from the frontend, stores raw JSON data in **Amazon S3**, processes events via scheduled ETL (AWS Lambda + EventBridge), and loads analytical data into a dedicated **PostgreSQL Data Warehouse** on EC2.
 
-- Are captured by a **Next.js** frontend hosted on **AWS Amplify** and delivered through **Amazon CloudFront**.  
-- Are ingested via **Amazon API Gateway** and a **Lambda Ingest** function into a **Raw Clickstream bucket on Amazon S3**.  
-- Are processed in batch by a **VPC-enabled ETL Lambda** that reads from S3 through an **S3 Gateway VPC Endpoint** and loads curated data into a **PostgreSQL Data Warehouse** on **EC2** in a private subnet.  
-- Are visualized via **R Shiny dashboards** running on the same EC2 instance as the Data Warehouse.
+Analytics dashboards are built using **R Shiny**, deployed in a private subnet and directly querying the Data Warehouse.
 
-The workshop emphasises:
+The platform is engineered with:
 
-- **Separation of OLTP and Analytics** workloads.  
-- A fully **private analytics backend** (ETL Lambda, Data Warehouse, Shiny) with no public IPs.  
-- **Cost‑efficient private access to S3** using a Gateway VPC Endpoint instead of a NAT Gateway.
+- Clear separation between **OLTP vs Analytics** workloads  
+- Private-only analytical backend (no public DW access)  
+- Cost-efficient, scalable AWS serverless components  
+- Minimal moving parts for reliability and simplicity  
+- Zero-SSH admin access via **AWS Systems Manager Session Manager** into the private DW
+
+#### Key Architecture Components
+
+**Frontend & OLTP Domain:**
+- **Next.js** on AWS Amplify Hosting with CloudFront CDN
+- **Amazon Cognito** for user authentication
+- **PostgreSQL on EC2** (public subnet) for operational database
+
+**Ingestion & Data Lake Domain:**
+- **API Gateway** + **Lambda Ingest** for event collection
+- **Amazon S3** raw clickstream bucket (partitioned by date/hour)
+- **EventBridge** cron-based batch ETL scheduling
+
+**Analytics & Data Warehouse Domain:**
+- **Lambda ETL** (VPC-enabled) processes raw events from S3
+- **PostgreSQL Data Warehouse** on EC2 (private subnet)
+- **R Shiny Server** for interactive dashboards
+- **S3 Gateway VPC Endpoint** for cost-efficient private S3 access (no NAT Gateway)
+- **SSM Interface Endpoints** for secure admin access
 
 #### Prerequisites
 
-Before starting the detailed sections (5.1–5.6), the reader is expected to have:
+Before starting the detailed sections (5.1–5.6), you should have:
 
-- Basic familiarity with **AWS services** such as EC2, S3, Lambda, API Gateway, VPC, and IAM.  
-- Working knowledge of **SQL** and **PostgreSQL**.  
-- A general understanding of **web applications** (HTTP, JSON, REST APIs).  
-- An AWS account with sufficient permissions to create VPC endpoints, Lambda functions, EC2 instances, S3 buckets, and EventBridge rules.
+- Basic familiarity with **AWS services**: EC2, S3, Lambda, API Gateway, VPC, IAM, EventBridge
+- Working knowledge of **SQL** and **PostgreSQL**
+- Understanding of **web applications** (HTTP, JSON, REST APIs)
+- An AWS account with permissions to create VPC endpoints, Lambda functions, EC2 instances, S3 buckets, and EventBridge rules
 
-> This workshop assumes that the core infrastructure (VPC, subnets, EC2 instances, Lambda functions, API Gateway, and S3 buckets) is already provisioned, for example via Infrastructure‑as‑Code such as Terraform or CloudFormation.
+> **Note**: This workshop assumes core infrastructure (VPC, subnets, EC2 instances, Lambda functions, API Gateway, S3 buckets) is already provisioned via Infrastructure-as-Code (Terraform/CloudFormation).
 
 #### Content Map
 
-The workshop content is split into six sections:
-
-1. [Objectives & Scope](5.1-Objectives-&-Scope)
-2. [Architecture Walkthrough](5.2-Architecture-Walkthrough) 
-3. [Implementing Clickstream Ingestion](5.3-Implementing-Clickstream-Ingestion) 
-4. [Building the Private Analytics Layer](5.4-Building-the-Private-Analytics-Layer)  
-5. [Visualizing Analytics with Shiny Dashboards](5.5-Visualizing-Analytics-with-Shiny-Dashboards)
-6. [Summary & Clean up](5.6-Summary-&-Clean-up)
+1. [Objectives & Scope](5.1-Objectives-&-Scope) - Business context and learning goals
+2. [Architecture Walkthrough](5.2-Architecture-Walkthrough) - Detailed component breakdown
+3. [Implementing Clickstream Ingestion](5.3-Implementing-Clickstream-Ingestion) - API Gateway + Lambda Ingest
+4. [Building the Private Analytics Layer](5.4-Building-the-Private-Analytics-Layer) - ETL Lambda + Data Warehouse
+5. [Visualizing Analytics with Shiny Dashboards](5.5-Visualizing-Analytics-with-Shiny-Dashboards) - R Shiny dashboards
+6. [Summary & Clean up](5.6-Summary-&-Clean-up) - Key learnings and resource cleanup

@@ -277,6 +277,79 @@ This setup ensures that:
 
 ---
 
+### Admin access via AWS Systems Manager Session Manager
+
+The Data Warehouse EC2 instance is in a **private subnet with no public IP**. Traditional SSH access would require either:
+
+- A bastion host (jump server) in a public subnet, or  
+- A VPN connection into the VPC.
+
+Instead, this architecture uses **AWS Systems Manager Session Manager**, which provides secure, browser-based shell access **without opening SSH ports** or deploying bastion hosts.
+
+#### How Session Manager works
+
+1. The EC2 instance runs the **SSM Agent** (pre-installed on Amazon Linux 2 and other AWS-optimized AMIs).  
+2. The SSM Agent connects outbound to the Systems Manager service endpoints over **HTTPS (port 443)**.  
+3. An admin opens the **AWS Console** or uses the **AWS CLI** to start a Session Manager session.  
+4. The session is established through the SSM service—**no inbound SSH traffic** is required.
+
+#### SSM VPC Interface Endpoints (Private Connectivity)
+
+To keep all Session Manager traffic **inside the VPC** (avoiding public internet paths), deploy **VPC Interface Endpoints** for:
+
+- `com.amazonaws.<region>.ssm`  
+- `com.amazonaws.<region>.ssmmessages`  
+- `com.amazonaws.<region>.ec2messages`
+
+These endpoints are placed in the **Analytics private subnet** and associated with a security group that:
+
+- Allows **inbound HTTPS (port 443)** from the Data Warehouse EC2 security group.  
+- Allows **outbound** to AWS Systems Manager services.
+
+With these endpoints deployed:
+
+- The EC2 instance connects to SSM **without requiring a NAT Gateway** or Internet Gateway route.  
+- All management traffic stays on the **AWS private network**.
+
+#### Connecting to the Data Warehouse EC2
+
+**Option A: AWS Console (browser-based shell)**
+
+1. Open the **EC2 Console**.  
+2. Select the Data Warehouse instance.  
+3. Click **Connect** → choose the **Session Manager** tab.  
+4. Click **Connect** to open a browser-based shell.
+
+**Option B: AWS CLI**
+
+```bash
+aws ssm start-session --target <instance-id>
+```
+
+Once connected, you can:
+
+- Run `psql` to query the PostgreSQL Data Warehouse.  
+- Check logs, restart services, or perform maintenance tasks.  
+- Use **port forwarding** to access the Shiny Server UI from your local machine:
+
+  ```bash
+  aws ssm start-session \
+    --target <instance-id> \
+    --document-name AWS-StartPortForwardingSession \
+    --parameters '{"portNumber":["3838"],"localPortNumber":["8080"]}'
+  ```
+
+  Then open `http://localhost:8080` in your browser to view Shiny dashboards.
+
+#### Benefits of Session Manager
+
+- **No SSH keys or bastion hosts** – reduces attack surface and operational overhead.  
+- **Audit and logging** – all session activity is logged to CloudWatch Logs or S3 (if configured).  
+- **Fine-grained IAM control** – use IAM policies to control who can start sessions on which instances.  
+- **Private connectivity** – with VPC Interface Endpoints, traffic never leaves the AWS network.
+
+---
+
 ### Testing the ETL pipeline from end to end
 
 To validate that the private analytics layer is working correctly:
@@ -300,8 +373,8 @@ To validate that the private analytics layer is working correctly:
 
 4. **Verify data in the Data Warehouse**
 
-   - Connect to the Data Warehouse EC2 instance using **Session Manager** or SSH.  
-   - From there, use `psql` or a SQL client to run queries such as:
+   - Connect to the Data Warehouse EC2 instance using **AWS Systems Manager Session Manager** (no SSH required).  
+   - From the Session Manager shell, use `psql` or a SQL client to run queries such as:
 
      ```sql
      SELECT event_name, COUNT(*) AS total_events

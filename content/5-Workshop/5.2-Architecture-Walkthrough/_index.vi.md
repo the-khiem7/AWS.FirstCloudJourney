@@ -7,7 +7,7 @@ pre: " <b> 5.2. </b> "
 
 Phần này cung cấp một cái nhìn tổng quan ở mức cao về kiến trúc tổng thể trước khi đi vào các bước thực hành chi tiết.
 
-### Miền hướng tới người dùng (User-facing Domain)
+### Miền nghiệp vụ hướng người dùng (User-facing Domain)
 
 - Frontend: **Next.js** được host trên **AWS Amplify**, phía trước là **Amazon CloudFront**.  
 - Xác thực: người dùng cuối đăng nhập thông qua **Amazon Cognito User Pool**.  
@@ -16,7 +16,7 @@ Phần này cung cấp một cái nhìn tổng quan ở mức cao về kiến tr
 
 > Trong thiết kế này, cơ sở dữ liệu OLTP được đặt trong public subnet một cách có chủ đích để giữ cho kết nối từ Amplify đơn giản. Trong một hệ thống đạt chuẩn production, OLTP thường sẽ nằm trong các private subnet phía sau một lớp API nội bộ.
 
-### Miền ingest & data lake (Ingestion & Data Lake Domain)
+### Miền nghiệp vụ hướng ingest & data lake (Ingestion & Data Lake Domain)
 
 - Frontend gửi các sự kiện HTTP tới **Amazon API Gateway (HTTP API)**, route `POST /clickstream`.  
 - Một **Lambda Ingest**:
@@ -30,7 +30,7 @@ Phần này cung cấp một cái nhìn tổng quan ở mức cao về kiến tr
 
 Mẫu (pattern) này giữ cho dữ liệu thô bất biến và được phân vùng theo thời gian, rất thuận tiện cho các job ETL theo lô (batch ETL).
 
-### Miền phân tích & data warehouse (Analytics & Data Warehouse Domain)
+### Miền nghiệp vụ hướng phân tích & data warehouse (Analytics & Data Warehouse Domain)
 
 - Một **ETL Lambda chạy trong VPC** được đặt trong **private subnet** dành riêng cho analytics/ETL.  
 - ETL Lambda đọc dữ liệu từ S3 thông qua **S3 Gateway VPC Endpoint**, sau đó:
@@ -83,3 +83,135 @@ Route table của private subnet:
 - **Không** có bất kỳ route `0.0.0.0/0` nào và **không** sử dụng NAT Gateway.
 
 ![Hình 5-4: Sơ đồ mạng VPC cho OLTP và Analytics](/images/5-2-vpc-network.png)
+
+---
+
+### Thiết kế Mạng & Bảo mật
+
+#### Cấu hình VPC
+
+- **VPC CIDR**: `10.0.0.0/16`
+- **Internet Gateway (IGW)**: Gắn vào VPC, cung cấp kết nối hai chiều cho các tài nguyên trong public subnet
+
+**Các Subnet:**
+
+1. **Public Subnet (10.0.1.0/24) - Lớp OLTP**
+   - EC2 PostgreSQL OLTP (có public IP)
+   - Định tuyến traffic Internet qua Internet Gateway
+   - Cho phép inbound từ Amplify và các IP admin
+   - Cho phép outbound để cập nhật và gọi các API bên ngoài
+
+2. **Private Subnet 1 (10.0.2.0/24) - Lớp Analytics**
+   - EC2 Data Warehouse (PostgreSQL) - không có public IP
+   - EC2 R Shiny Server - không có public IP
+   - SSM Interface Endpoint cho Session Manager
+   - Không có truy cập internet trực tiếp (không có route tới IGW)
+   - Hoàn toàn cô lập khỏi internet công cộng
+
+3. **Private Subnet 2 (10.0.3.0/24) - Lớp ETL**
+   - Lambda ETL (chạy trong VPC) - không có public IP
+   - S3 Gateway VPC Endpoint để truy cập S3 riêng tư
+   - Không có truy cập internet trực tiếp (không có route tới IGW)
+
+#### Bảng định tuyến
+
+**Public Route Table** (Public Subnet):
+- `10.0.0.0/16` → Local (nội bộ VPC)
+- `0.0.0.0/0` → Internet Gateway (default route)
+
+**Private Route Table 1** (Analytics Subnet):
+- `10.0.0.0/16` → Local (chỉ nội bộ VPC)
+- **Không có default route tới Internet Gateway**
+- Truy cập admin qua SSM Interface Endpoints
+
+**Private Route Table 2** (ETL Subnet):
+- `10.0.0.0/16` → Local (nội bộ VPC)
+- S3 prefix list → S3 Gateway VPC Endpoint
+- **Không có default route tới Internet Gateway**
+
+> **Thiết kế Chính**: Không triển khai NAT Gateway. Các thành phần private truy cập S3 qua Gateway VPC Endpoint, loại bỏ chi phí NAT trong khi vẫn duy trì bảo mật.
+
+#### Security Groups
+
+**SG-OLTP:**
+- Inbound: `5432/tcp` từ Amplify/trusted IPs, `22/tcp` từ admin IP
+- Outbound: mặc định (tất cả được phép)
+
+**SG-DW:**
+- Inbound: `5432/tcp` từ Lambda ETL SG và Shiny SG
+- Outbound: `443/tcp` tới SSM interface endpoints
+- Truy cập admin qua Session Manager (không có inbound SSH)
+
+**SG-Shiny:**
+- Inbound: hạn chế chỉ cho admin/VPN
+- Outbound: được phép tới DW (localhost/private IP)
+
+**SG-ETL-Lambda:**
+- Không có inbound (Lambda không chấp nhận inbound)
+- Outbound: được phép tới S3 endpoint + DW SG
+
+#### Các Dịch vụ AWS Bên ngoài
+
+Các dịch vụ bên ngoài VPC tương tác với hạ tầng:
+
+- **AWS Amplify Hosting**: Kết nối tới OLTP EC2 qua Internet Gateway bằng Prisma
+- **Amazon CloudFront**: Phân phối static assets trên toàn cầu
+- **Amazon Cognito**: Dịch vụ xác thực khu vực, không tương tác với VPC
+- **Amazon API Gateway**: Điểm vào cho clickstream events, gọi Lambda Ingest
+- **Amazon EventBridge**: Kích hoạt các ETL jobs theo lịch (Lambda ETL trong VPC)
+- **AWS Systems Manager**: Truy cập admin qua VPC Interface Endpoints (không SSH)
+
+---
+
+### Tóm tắt Luồng Dữ liệu
+
+**Luồng Tương tác Người dùng:**
+1. Người dùng truy cập qua CloudFront → Amplify Hosting
+2. Người dùng xác thực qua Cognito
+3. Amplify SSR/API truy vấn OLTP EC2 qua Internet Gateway bằng Prisma
+
+**Ingestion Clickstream:**
+4. Frontend gửi events tới API Gateway
+5. Lambda Ingest ghi raw JSON vào S3 Raw Clickstream Bucket
+
+**Xử lý ETL theo Lô:**
+6. EventBridge (lịch cron, ví dụ: mỗi 30 phút) kích hoạt Lambda ETL
+7. Lambda ETL (chạy trong VPC tại Private Subnet 2):
+   - Đọc raw files từ S3 qua Gateway VPC Endpoint
+   - Làm sạch, chuẩn hóa, sessionize các events
+   - Kết nối tới PostgreSQL DW (Private Subnet 1) qua VPC routing
+   - Chèn dữ liệu đã xử lý vào các bảng DW
+
+**Truy cập Analytics:**
+8. R Shiny Server (cùng EC2 với DW) kết nối qua localhost
+9. Admin sử dụng AWS Systems Manager Session Manager port-forwarding qua SSM interface endpoints
+
+---
+
+### Các Tính năng Chính
+
+- Ingestion clickstream theo lô (API Gateway + Lambda + S3)  
+- ETL serverless với lịch EventBridge  
+- Tách biệt rõ ràng giữa OLTP và Analytics  
+- R Shiny dashboards (hoàn toàn private)  
+- Zero-SSH admin qua SSM Session Manager  
+- Tối ưu chi phí (không NAT Gateway, S3 Gateway Endpoint, Lambda compute)  
+- Kết nối PostgreSQL trực tiếp từ Amplify bằng Prisma
+
+---
+
+### Tóm tắt Tech Stack
+
+**Các Dịch vụ AWS:**
+- AWS Amplify Hosting, CloudFront, Cognito
+- Amazon S3, API Gateway, Lambda, EventBridge
+- Amazon EC2, VPC, IAM, CloudWatch
+- AWS Systems Manager (Session Manager + VPC Endpoints)
+
+**Cơ sở dữ liệu:**
+- PostgreSQL (EC2 OLTP) - cơ sở dữ liệu vận hành
+- PostgreSQL (EC2 DW) - cơ sở dữ liệu phân tích
+
+**Analytics:**
+- R Shiny Server - dashboard tương tác
+- Logic ETL tùy chỉnh - Lambda chuyển đổi S3 JSON → bảng SQL

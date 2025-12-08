@@ -277,6 +277,79 @@ Thiết lập này đảm bảo rằng:
 
 ---
 
+### Truy cập admin qua AWS Systems Manager Session Manager
+
+EC2 Data Warehouse đặt trong **private subnet không có public IP**. Truy cập SSH truyền thống sẽ cần:
+
+- Một bastion host (jump server) trong public subnet, hoặc  
+- Một kết nối VPN vào VPC.
+
+Thay vào đó, kiến trúc này sử dụng **AWS Systems Manager Session Manager**, cung cấp truy cập shell an toàn thông qua trình duyệt **mà không cần mở cổng SSH** hay triển khai bastion host.
+
+#### Cách hoạt động của Session Manager
+
+1. EC2 instance chạy **SSM Agent** (cài sẵn trên Amazon Linux 2 và các AMI được tối ưu hóa bởi AWS).  
+2. SSM Agent kết nối outbound tới các endpoint của dịch vụ Systems Manager qua **HTTPS (port 443)**.  
+3. Admin mở **AWS Console** hoặc sử dụng **AWS CLI** để bắt đầu một phiên Session Manager.  
+4. Phiên được thiết lập thông qua dịch vụ SSM—**không cần inbound SSH traffic**.
+
+#### SSM VPC Interface Endpoints (Kết nối riêng tư)
+
+Để giữ toàn bộ traffic Session Manager **bên trong VPC** (tránh đi qua đường internet công cộng), triển khai **VPC Interface Endpoints** cho:
+
+- `com.amazonaws.<region>.ssm`  
+- `com.amazonaws.<region>.ssmmessages`  
+- `com.amazonaws.<region>.ec2messages`
+
+Các endpoint này được đặt trong **Analytics private subnet** và gắn với security group:
+
+- Cho phép **inbound HTTPS (port 443)** từ security group của EC2 Data Warehouse.  
+- Cho phép **outbound** tới các dịch vụ AWS Systems Manager.
+
+Với các endpoint này:
+
+- EC2 instance kết nối tới SSM **mà không cần NAT Gateway** hay route tới Internet Gateway.  
+- Tất cả traffic quản trị ở lại trên **mạng riêng AWS**.
+
+#### Kết nối vào EC2 Data Warehouse
+
+**Phương án A: AWS Console (shell qua trình duyệt)**
+
+1. Mở **EC2 Console**.  
+2. Chọn Data Warehouse instance.  
+3. Bấm **Connect** → chọn tab **Session Manager**.  
+4. Bấm **Connect** để mở shell qua trình duyệt.
+
+**Phương án B: AWS CLI**
+
+```bash
+aws ssm start-session --target <instance-id>
+```
+
+Sau khi kết nối, bạn có thể:
+
+- Chạy `psql` để truy vấn PostgreSQL Data Warehouse.  
+- Kiểm tra log, khởi động lại dịch vụ, hoặc thực hiện bảo trì.  
+- Sử dụng **port forwarding** để truy cập Shiny Server UI từ máy local:
+
+  ```bash
+  aws ssm start-session \
+    --target <instance-id> \
+    --document-name AWS-StartPortForwardingSession \
+    --parameters '{"portNumber":["3838"],"localPortNumber":["8080"]}'
+  ```
+
+  Sau đó mở `http://localhost:8080` trong trình duyệt để xem dashboard Shiny.
+
+#### Lợi ích của Session Manager
+
+- **Không cần SSH key hay bastion host** – giảm bề mặt tấn công và giảm chi phí vận hành.  
+- **Audit và logging** – tất cả hoạt động phiên được ghi vào CloudWatch Logs hoặc S3 (nếu cấu hình).  
+- **Kiểm soát IAM chi tiết** – sử dụng IAM policy để kiểm soát ai có thể bắt đầu phiên trên instance nào.  
+- **Kết nối riêng tư** – với VPC Interface Endpoints, traffic không bao giờ rời khỏi mạng AWS.
+
+---
+
 ### Kiểm thử pipeline ETL end-to-end
 
 Để xác nhận lớp phân tích riêng tư hoạt động đúng:
@@ -300,8 +373,8 @@ Thiết lập này đảm bảo rằng:
 
 4. **Kiểm tra dữ liệu trong Data Warehouse**
 
-   - Kết nối vào EC2 Data Warehouse bằng **Session Manager** hoặc SSH.  
-   - Từ đó, sử dụng `psql` hoặc client SQL bất kỳ để chạy các truy vấn ví dụ:
+   - Kết nối vào EC2 Data Warehouse bằng **AWS Systems Manager Session Manager** (không cần SSH).  
+   - Từ shell của Session Manager, sử dụng `psql` hoặc client SQL bất kỳ để chạy các truy vấn ví dụ:
 
      ```sql
      SELECT event_name, COUNT(*) AS total_events

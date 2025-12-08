@@ -16,7 +16,8 @@ Nền tảng được triển khai trên AWS và sử dụng:
 - **Amazon S3** (lưu trữ dữ liệu clickstream thô).  
 - **Amazon VPC** với các public subnet và private subnet (cô lập mạng).  
 - **PostgreSQL** trên **Amazon EC2** (OLTP và Data Warehouse).  
-- **R Shiny Server** (các dashboard phân tích).
+- **R Shiny Server** (các dashboard phân tích).  
+- **AWS Systems Manager** (Session Manager để admin truy cập an toàn vào các EC2 private instance mà không cần SSH).
 
 ---
 
@@ -66,7 +67,8 @@ Sau khi hoàn thành tất cả các phần (5.1–5.6), người đọc sẽ c�
 - Liệt kê các cơ chế bảo mật chính được sử dụng trong kiến trúc:
   - Phân tách public subnet và private subnet.  
   - Security group giữa OLTP, ETL Lambda và Data Warehouse.  
-  - Quyền hạn IAM tối thiểu cần thiết cho Lambda Ingest và ETL Lambda.
+  - Quyền hạn IAM tối thiểu cần thiết cho Lambda Ingest và ETL Lambda.  
+  - **Truy cập admin không cần SSH (Zero-SSH)** sử dụng **AWS Systems Manager Session Manager** thông qua VPC Interface Endpoints, loại bỏ nhu cầu về bastion host hoặc mở cổng SSH.
 
 ---
 

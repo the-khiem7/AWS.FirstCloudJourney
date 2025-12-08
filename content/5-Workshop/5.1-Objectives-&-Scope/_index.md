@@ -16,7 +16,8 @@ The platform is implemented on AWS and uses:
 - **Amazon S3** (raw clickstream data storage).  
 - **Amazon VPC** with public and private subnets (network isolation).  
 - **PostgreSQL** on **Amazon EC2** (OLTP and Data Warehouse).  
-- **R Shiny Server** (analytics dashboards).
+- **R Shiny Server** (analytics dashboards).  
+- **AWS Systems Manager** (Session Manager for secure, zero-SSH admin access to private EC2 instances).
 
 ---
 
@@ -66,7 +67,8 @@ After completing all sections (5.1–5.6), the reader should be able to:
 - List the main security controls used in the architecture:
   - Public vs. private subnets.  
   - Security groups between OLTP, ETL Lambda, and Data Warehouse.  
-  - Limited IAM permissions for Lambda Ingest and ETL Lambda.
+  - Limited IAM permissions for Lambda Ingest and ETL Lambda.  
+  - **Zero-SSH admin access** using **AWS Systems Manager Session Manager** via VPC Interface Endpoints, eliminating the need for bastion hosts or exposed SSH ports.
 
 ---
 
