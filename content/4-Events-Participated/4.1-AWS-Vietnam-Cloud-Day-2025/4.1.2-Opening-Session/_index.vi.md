@@ -1,10 +1,10 @@
 ---
 title : "Opening Session (Jun Kai Loke)"
 date: 2025-09-24
-weight : 7.2
+weight : 2
 chapter : false
 tags: ["AWS", "CloudDay", "Vietnam", "GenAI", "AI Agents", "Events"]
-pre : " <b> 7.2 </b> "
+pre : " <b> 4.1.2 </b> "
 ---
 
 ## 1. Chủ đề mở màn: Agentic AI

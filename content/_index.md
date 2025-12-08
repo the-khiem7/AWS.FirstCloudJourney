@@ -29,6 +29,11 @@ chapter : false
 ![AboutMe](/images/img-portfolio.jpg) 
 
 ### Content
- 1. [Worklog](1-worklog/)
- 2. [Workshop: Private Analytics Platform](5-workshop/)
- 3. [AWS Vietnam Cloud Day 2025](7-aws-vietnam-cloud-day-2025/)
+ 1. [Worklog](1-Worklog/)
+ 2. [Proposal](2-Proposal/)
+ 3. [Translated Blogs](3-Translated-Blogs/)
+ 4. [Events Participated](4-Events-Participated/)
+    - [AWS Vietnam Cloud Day 2025](4-Events-Participated/4.1-AWS-Vietnam-Cloud-Day-2025/)
+ 5. [Workshop: Private Analytics Platform](5-Workshop/)
+ 6. [Self Assessment](6-Self-Assessment/)
+ 7. [Sharing & Feedback](7-Sharing-&-Feedback/)

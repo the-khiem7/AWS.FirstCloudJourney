@@ -1,8 +1,8 @@
-# AWS First Cloud Journey
+﻿# AWS First Cloud Journey
 
 Personal internship documentation and learning journal for AWS Cloud technologies.
 
-## 🎯 About
+## ≡ƒÄ» About
 
 This repository contains my internship documentation, workshop notes, and hands-on labs completed during my journey with AWS services at Amazon Web Services Vietnam Co., Ltd.
 
@@ -11,12 +11,22 @@ This repository contains my internship documentation, workshop notes, and hands-
 **Position**: FCJ Cloud Intern  
 **University**: FPT University - Software Engineering
 
-## 📚 Content Structure
+## Content Structure
 
 ### 1. [Worklog](content/1-Worklog/)
-Weekly documentation of internship activities, learnings, and progress (Week 1-12)
+Weekly documentation of internship activities, learnings, and progress (Week 1-12).
 
-### 2. [Workshop: Private Analytics Platform](content/5-Workshop/)
+### 2. [Proposal](content/2-Proposal/)
+Internship and project proposals, approvals, and planning notes.
+
+### 3. [Translated Blogs](content/3-Translated-Blogs/)
+Translated AWS blog posts and reference write-ups for study.
+
+### 4. [Events Participated](content/4-Events-Participated/)
+Records of events, conferences, and trainings attended.
+- [AWS Vietnam Cloud Day 2025](content/4-Events-Participated/4.1-AWS-Vietnam-Cloud-Day-2025/)
+
+### 5. [Workshop: Private Analytics Platform](content/5-Workshop/)
 Hands-on workshop building a private analytics platform with AWS services:
 - Objectives & Scope
 - Architecture Walkthrough
@@ -25,15 +35,13 @@ Hands-on workshop building a private analytics platform with AWS services:
 - Shiny Dashboards Visualization
 - Clean-up & Summary
 
-### 3. [AWS Vietnam Cloud Day 2025](content/7-AWS%20Vietnam%20Cloud%20Day%202025/)
-Conference notes and learnings from AWS Vietnam Cloud Day 2025:
-- AWS Keynote Address (Eric Yeo)
-- Opening Session (Jun Kai Loke)
-- Amazon Bedrock & AgentCore
-- Unified Data Foundation for AI & Analytics
-- Amazon SageMaker Unified Studio & Lakehouse
+### 6. [Self Assessment](content/6-Self-Assessment/)
+Personal reflections on progress, strengths, gaps, and next steps.
 
-## 🚀 Quick Start
+### 7. [Sharing & Feedback](content/7-Sharing-&-Feedback/)
+Shared learnings, peer feedback, and community notes.
+
+## ≡ƒÜÇ Quick Start
 
 ### Prerequisites
 - [Hugo Extended](https://gohugo.io/installation/) v0.152.2 or later
@@ -59,7 +67,7 @@ npm run build
 
 Visit `http://localhost:1313/AWS.FirstCloudJourney/` to view the site locally.
 
-## 🛠️ Tech Stack
+## ≡ƒ¢á∩╕Å Tech Stack
 
 - **Static Site Generator**: Hugo (Extended)
 - **Theme**: hugo-theme-learn
@@ -68,7 +76,7 @@ Visit `http://localhost:1313/AWS.FirstCloudJourney/` to view the site locally.
   - Vercel (Backup)
 - **CI/CD**: GitHub Actions
 
-## 📝 Content Management
+## ≡ƒô¥ Content Management
 
 ### Adding New Content
 
@@ -85,14 +93,14 @@ All content is available in both English and Vietnamese:
 
 ### When Deleting Content Folders
 
-**⚠️ Important**: To avoid 404 errors on GitHub Pages:
+**ΓÜá∩╕Å Important**: To avoid 404 errors on GitHub Pages:
 
 1. **Remove references first** - Update all `_index.md` files that link to the content
 2. **Delete the folder** - Remove from `content/` directory
 3. **Test locally** - Run `npm run build` to verify
 4. **Commit & push** - Deploy changes
 
-## 🌐 Deployment
+## ≡ƒîÉ Deployment
 
 ### GitHub Pages (Primary)
 - **URL**: https://the-khiem7.github.io/AWS.FirstCloudJourney/
@@ -103,55 +111,24 @@ All content is available in both English and Vietnamese:
 - **Config**: Uses `config.production.toml` for relative URLs
 - **Build**: `hugo --config config.production.toml --gc --minify`
 
-## 📂 Repository Structure
+## ≡ƒôé Repository Structure
 
 ```
 .
-├── content/              # Markdown content files
-│   ├── 1-Worklog/       # Weekly internship logs
-│   ├── 5-Workshop/      # Private Analytics workshop
-│   └── 7-AWS Vietnam Cloud Day 2025/
-├── static/              # Static assets (images, CSS, fonts)
-├── themes/              # Hugo theme
-├── layouts/             # Custom layout overrides
-├── config.toml          # Hugo config for GitHub Pages
-├── config.production.toml # Hugo config for Vercel
-└── package.json         # Node.js dependencies
-
+|-- content/                # Markdown content files
+|   |-- 1-Worklog/          # Weekly internship logs
+|   |-- 2-Proposal/
+|   |-- 3-Translated-Blogs/
+|   |-- 4-Events-Participated/
+|   |   \-- 4.1-AWS Vietnam Cloud Day 2025/
+|   |-- 5-Workshop/         # Private Analytics workshop
+|   |-- 6-Self-Assessment/
+|   \-- 7-Sharing-&-Feedback/
+|-- static/                 # Static assets (images, CSS, fonts)
+|-- themes/                 # Hugo theme
+|-- layouts/                # Custom layout overrides
+|-- config.toml             # Hugo config for GitHub Pages
+|-- config.production.toml  # Hugo config for Vercel
+\-- package.json            # Node.js dependencies
 ```
-
-## 🔧 Configuration
-
-### GitHub Pages Settings
-- Source: GitHub Actions
-- Branch: `main`
-- Base URL: `https://the-khiem7.github.io/AWS.FirstCloudJourney`
-
-### Build Commands
-```json
-{
-  "build": "hugo --gc --minify",
-  "dev": "hugo server -D"
-}
 ```
-
-## 📖 Guidelines
-
-See [AGENTS.md](AGENTS.md) for detailed repository guidelines including:
-- Project structure & module organization
-- Build, test, and development commands
-- Coding style & naming conventions
-- Commit & pull request guidelines
-
-## 📧 Contact
-
-- **Email**: khiemnguyen120216@gmail.com
-- **Facebook**: [AWS Study Group](https://www.facebook.com/groups/awsstudygroupfcj/)
-
-## 📄 License
-
-This project is for educational purposes as part of internship documentation.
-
----
-
-Built with ❤️ using [Hugo](https://gohugo.io/) and deployed on [GitHub Pages](https://pages.github.com/)

@@ -1,10 +1,10 @@
 ---
 title : "AWS Vietnam Cloud Day 2025"
 date: 2025-09-24
-weight : 7
+weight : 1
 chapter : false
 tags: ["AWS", "CloudDay", "Vietnam", "GenAI", "AI Agents", "Events"]
-pre : " <b> 7. </b> "
+pre : " <b> 4.1. </b> "
 ---
 
 Welcome to **AWS Vietnam CloudDay 2025**! 🎉  

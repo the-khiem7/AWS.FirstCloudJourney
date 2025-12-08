@@ -1,10 +1,10 @@
 ---
 title : "Unified Data Foundation for AI & Analytics"
 date: 2025-09-24
-weight : 7.4
+weight : 4
 chapter : false
 tags: ["AWS", "CloudDay", "Vietnam", "GenAI", "AI Agents", "Events"]
-pre : " <b> 7.4 </b> "
+pre : " <b> 4.1.4 </b> "
 ---
 
 ## 1. Thách thức từ Data Silos

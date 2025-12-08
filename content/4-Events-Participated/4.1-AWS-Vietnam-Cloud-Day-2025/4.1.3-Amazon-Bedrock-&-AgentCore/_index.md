@@ -1,10 +1,10 @@
 ---
 title : "Amazon Bedrock & AgentCore"
 date: 2025-09-24
-weight : 7.3
+weight : 3
 chapter : false
 tags: ["AWS", "CloudDay", "Vietnam", "GenAI", "AI Agents", "Events"]
-pre : " <b> 7.3 </b> "
+pre : " <b> 4.1.3 </b> "
 ---
 ## 1. Introducing Amazon Bedrock
 

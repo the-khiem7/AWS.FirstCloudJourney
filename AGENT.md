@@ -1,6 +1,6 @@
 ﻿# Agent Translation Playbook
 
-This repository keeps paired Markdown files for every Cloud Day session. Each directory under `content/7-AWS Vietnam Cloud Day 2025/` contains:
+This repository keeps paired Markdown files for every Cloud Day session. Each directory under `content/4-Events-Participated/4.1-AWS Vietnam Cloud Day 2025/` contains:
 
 - `_index.vi.md` - Vietnamese source material
 - `_index.md` - English translation target
@@ -8,7 +8,7 @@ This repository keeps paired Markdown files for every Cloud Day session. Each di
 Follow the steps below whenever a translation update is requested.
 
 ## 1. Scope & Prep
-- Work only inside the specific subfolders that the user names; ignore the parent `_index.*` files at `content/7-AWS Vietnam Cloud Day 2025` unless explicitly asked.
+- Work only inside the specific subfolders that the user names; ignore the parent `_index.*` files at `content/4-Events-Participated/4.1-AWS Vietnam Cloud Day 2025` unless explicitly asked.
 - Confirm both `_index.vi.md` and `_index.md` exist in each target subfolder before making changes.
 - Use UTF-8 without BOM when writing files and keep content ASCII-only unless the source already relies on non-ASCII characters (for example, image filenames containing an en dash).
 
