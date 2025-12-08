@@ -23,27 +23,21 @@ Together, these components form the backbone of the batch-processing pipeline:
 
 The VPC is logically divided into subnets with distinct roles:
 
-- **Public Subnet – OLTP (10.0.1.0/24)**  
-  - Hosts the OLTP PostgreSQL EC2 instance.  
+- **Public Subnet – OLTP (10.0.0.0/20)**  
+  - Hosts the OLTP PostgreSQL EC2 instance (`SBW_EC2_WebDB`).  
   - Has a route `0.0.0.0/0 → Internet Gateway (IGW)` for inbound/outbound Internet access.  
 
-- **Private Subnet – Analytics (10.0.2.0/24)**  
-  - Hosts the **Data Warehouse EC2** instance and the **R Shiny Server**.  
+- **Private Subnet – Analytics & ETL (10.0.128.0/20)**  
+  - Hosts the **Data Warehouse EC2** instance (`SBW_EC2_ShinyDWH`) and the **R Shiny Server**.  
+  - Hosts the **VPC-enabled ETL Lambda** (`SBW_Lamda_ETL`) and the **S3 Gateway VPC Endpoint**.  
   - Has **no route to the Internet Gateway** and **no NAT Gateway**.  
-  - Only local VPC routes plus internal connectivity to other private subnets.
-
-- **Private Subnet – ETL (10.0.3.0/24)**  
-  - Hosts the **VPC-enabled ETL Lambda** and the **S3 Gateway VPC Endpoint**.  
-  - Also has **no 0.0.0.0/0 route**, and no NAT Gateway.  
-  - Can reach S3 privately through the Gateway Endpoint.
+  - Only local VPC routes plus S3 Gateway Endpoint for private S3 access.
 
 This design ensures that:
 
 - The Data Warehouse and R Shiny are **not directly reachable from the public Internet**.  
 - The ETL Lambda can access S3 and the Data Warehouse **only over private AWS networking**.  
-- There is **no NAT Gateway**, which reduces cost and simplifies the network footprint.
-
----
+- There is **no NAT Gateway**, which reduces cost and simplifies the network footprint.---
 
 ### Creating and configuring the S3 Gateway VPC Endpoint
 
@@ -70,7 +64,7 @@ This configuration ensures that traffic from the ETL Lambda and the Data Warehou
 
 5. For **Endpoint type**, select **Gateway**.  
 6. For **VPC**, choose the project VPC that contains your analytics and ETL subnets.  
-7. Under **Route tables**, select the route table associated with the **ETL private subnet (10.0.3.0/24)** and, optionally, the **Analytics private subnet (10.0.2.0/24)** if you also want the DW EC2 instance to access S3 privately.  
+7. Under **Route tables**, select the route table associated with the **private subnet (10.0.128.0/20)** to allow both the DW EC2 instance and ETL Lambda to access S3 privately.  
 8. In the **Policy** section, you can start with **Full access** for the workshop:
 
    ```json
@@ -96,7 +90,7 @@ This configuration ensures that traffic from the ETL Lambda and the Data Warehou
 After the endpoint is created, AWS automatically adds routes to the selected route tables.
 
 1. In the **VPC Console**, open **Route tables**.  
-2. Select the route table used by the **ETL private subnet**.  
+2. Select the route table used by the **private subnet (10.0.128.0/20)**.  
 3. On the **Routes** tab, verify that:
 
    - There is a local route:
@@ -153,7 +147,7 @@ The ETL Lambda function must be placed inside the VPC so it can:
 
 The ETL Lambda **execution role** must include:
 
-- Permission to **read from** the Raw Clickstream S3 bucket, e.g.:
+- Permission to **read from** the Raw Clickstream S3 bucket (`clickstream-s3-ingest`), e.g.:
 
   ```json
   {
@@ -163,8 +157,8 @@ The ETL Lambda **execution role** must include:
       "s3:ListBucket"
     ],
     "Resource": [
-      "arn:aws:s3:::clickstream-raw-<account>-<region>",
-      "arn:aws:s3:::clickstream-raw-<account>-<region>/events/*"
+      "arn:aws:s3:::clickstream-s3-ingest",
+      "arn:aws:s3:::clickstream-s3-ingest/events/*"
     ]
   }
   ```
@@ -176,10 +170,12 @@ The ETL Lambda **execution role** must include:
 
 In the ETL Lambda environment variables, store:
 
-- `DW_HOST` – the private IP or hostname of the Data Warehouse EC2 instance.  
-- `DW_PORT` – typically `5432`.  
-- `DW_USER` / `DW_PASSWORD` – credentials with sufficient privileges to insert into DW tables.  
-- `DW_DATABASE` – the name of the analytics database.
+- `DWH_HOST` – the private IP or hostname of the Data Warehouse EC2 instance (`SBW_EC2_ShinyDWH`).  
+- `DWH_PORT` – typically `5432`.  
+- `DWH_USER` / `DWH_PASSWORD` – credentials with sufficient privileges to insert into DWH tables.  
+- `DWH_DATABASE` – the name of the analytics database (`clickstream_dw`).  
+- `RAW_BUCKET` – the S3 bucket name for raw clickstream data (`clickstream-s3-ingest`).  
+- `AWS_REGION` – the AWS region (`ap-southeast-1`).
 
 The Lambda code will use these environment variables to establish a connection (for example, using a PostgreSQL client library).
 
@@ -190,7 +186,7 @@ The Lambda code will use these environment variables to establish a connection (
 The ETL Lambda performs the following high-level steps each time it runs (either on a schedule via EventBridge or triggered manually):
 
 1. **Determine the time window / S3 prefix to process**  
-   - For example, all objects under `events/YYYY/MM/DD/HH/` for the last hour.
+   - For example, all objects under `events/YYYY/MM/DD/` for the current day.
 
 2. **List relevant S3 objects**  
    - Use `ListObjectsV2` on the Raw Clickstream bucket with the chosen prefix.
@@ -200,10 +196,12 @@ The ETL Lambda performs the following high-level steps each time it runs (either
    - Validate important fields (event name, timestamp, user/session IDs, product IDs).
 
 4. **Transform to analytical schema**  
-   - Map raw JSON to relational tables, for example:
-
-     - `dim_users` – user-level attributes.  
-     - `dim_products` – product attributes.  
+   - Map raw JSON to the main fact table `clickstream_events` with columns:
+     - `event_id`, `event_timestamp`, `event_name`  
+     - `user_id`, `user_login_state`, `identity_source`  
+     - `client_id`, `session_id`, `is_first_visit`  
+     - `context_product_id`, `context_product_name`, `context_product_category`, `context_product_brand`  
+     - `context_product_price`, `context_product_discount_price`, `context_product_url_path`  
      - `fact_events` – individual events with foreign keys to users and products.  
      - `fact_sessions` – aggregated session-level metrics.
 
@@ -221,29 +219,35 @@ The ETL Lambda performs the following high-level steps each time it runs (either
 6. **Mark progress (optional)**  
    - Store a processing marker (e.g., last processed hour) in a control table or a metadata S3 prefix to avoid re-processing.
 
-Example of a simple target fact table for events:
+Example of the main fact table for events:
 
 ```sql
-CREATE TABLE IF NOT EXISTS fact_events (
-    event_id          UUID PRIMARY KEY,
-    event_timestamp   TIMESTAMPTZ NOT NULL,
-    event_name        TEXT NOT NULL,
-    user_id           TEXT,
-    session_id        TEXT,
-    client_id         TEXT,
-    product_id        TEXT,
-    page_url          TEXT,
-    traffic_source    TEXT,
-    created_at        TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS clickstream_events (
+    event_id                        TEXT PRIMARY KEY,
+    event_timestamp                 TIMESTAMPTZ NOT NULL,
+    event_name                      TEXT NOT NULL,
+    user_id                         TEXT,
+    user_login_state               TEXT,
+    identity_source                TEXT,
+    client_id                      TEXT,
+    session_id                     TEXT,
+    is_first_visit                 BOOLEAN,
+    context_product_id             TEXT,
+    context_product_name           TEXT,
+    context_product_category       TEXT,
+    context_product_brand          TEXT,
+    context_product_price          NUMERIC,
+    context_product_discount_price NUMERIC,
+    context_product_url_path       TEXT
 );
 ```
 
-The ETL Lambda will insert data into `fact_events` based on the parsed S3 JSON files.
+The ETL Lambda (`SBW_Lamda_ETL`) will insert data into `clickstream_events` based on the parsed S3 JSON files from `clickstream-s3-ingest`.
 
 **Figure 5-10: VPC configuration of the ETL Lambda function**
 
-The screenshot shows the `SBW_Lamda_ETL` function attached to the `SBW_Project-vpc`.  
-The Lambda uses two private subnets (one in each Availability Zone) and a dedicated security group (`sg_Lamda_ETL`) that controls all network access.  
+The screenshot shows the `SBW_Lamda_ETL` function attached to the VPC.  
+The Lambda uses the private subnet and a dedicated security group (`sg_Lambda_ETL`) that controls all network access.  
 This configuration allows the function to reach the S3 Gateway VPC Endpoint and the Data Warehouse instance without exposing the Lambda to the public internet.
 
 ![Figure 5-10: VPC configuration of the ETL Lambda function](/images/5-4-lambda-etl-vpc.png)
@@ -254,14 +258,14 @@ This configuration allows the function to reach the S3 Gateway VPC Endpoint and 
 
 To ensure that only the necessary traffic is allowed:
 
-- **Security Group for the Data Warehouse EC2 (SG-DW)**
+- **Security Group for the Data Warehouse EC2 (sg_analytics_ShinyDWH)**
 
   - Inbound rules:
-    - Allow `5432/tcp` **from the ETL Lambda security group** (not from `0.0.0.0/0`).  
+    - Allow `5432/tcp` **from the ETL Lambda security group (`sg_Lambda_ETL`)** (not from `0.0.0.0/0`).  
   - Outbound rules:
     - Allow all outbound traffic (or restrict as needed for updates/monitoring).
 
-- **Security Group for the ETL Lambda (SG-ETL)**
+- **Security Group for the ETL Lambda (sg_Lambda_ETL)**
 
   - Inbound rules:
     - Not needed (Lambda does not accept inbound connections).  
@@ -273,7 +277,7 @@ To ensure that only the necessary traffic is allowed:
 This setup ensures that:
 
 - Only the ETL Lambda can talk to the Data Warehouse (no direct access from the public Internet).  
-- The Data Warehouse EC2 does not accept arbitrary incoming connections.
+- The Data Warehouse EC2 (`SBW_EC2_ShinyDWH`) does not accept arbitrary incoming connections.
 
 ---
 

@@ -77,7 +77,7 @@ Các đặc điểm chính:
 **Hình 5-5: API Gateway route cho POST /clickstream**
 
 Ảnh chụp màn hình cho thấy cấu hình HTTP API cho endpoint ingest clickstream.  
-Resource `/clickstream` expose một route `POST` duy nhất, được tích hợp với Lambda `clickstream-ingest`.  
+Resource `/clickstream` expose một route `POST` duy nhất, được tích hợp với Lambda `clickstream-lambda-ingest`.  
 Trong workshop này không cấu hình authorizer để nội dung tập trung vào ingest dữ liệu thay vì xác thực.
 
 ![Hình 5-5: API Gateway route cho POST /clickstream](/images/5-3-apigw-clickstream-route.png)
@@ -98,23 +98,23 @@ Trong workshop này không cấu hình authorizer để nội dung tập trung v
      - API Gateway request ID.  
      - Source IP hoặc user agent (nếu cần).  
 
-3. **Batch và ghi vào S3**  
-   - Tạo key trong Raw Clickstream bucket theo pattern phân vùng theo thời gian, ví dụ:
+3. **Gộp batch và ghi vào S3**  
+   - Tạo key trong Raw Clickstream bucket (`clickstream-s3-ingest`) theo pattern phân vùng theo thời gian, ví dụ:
 
      ```text
-     s3://<raw-bucket>/events/YYYY/MM/DD/HH/events-<uuid>.json
+     s3://clickstream-s3-ingest/events/YYYY/MM/DD/event-<uuid>.json
      ```
 
-   - Ghi các event nhận được dưới dạng JSON array hoặc NDJSON (newline-delimited JSON), tuỳ định dạng đã chọn.
+   - Ghi các event nhận được dưới dạng JSON array hoặc NDJSON (newline-delimited JSON), tuỳ theo format được chọn.
 
 4. **Logging và xử lý lỗi**  
    - Ghi log các lỗi validate hoặc event sai format vào **CloudWatch Logs**.  
    - Trả về status code HTTP phù hợp cho API Gateway (ví dụ: `200` khi thành công, `400` khi payload không hợp lệ).
 
-Ví dụ S3 object key cho một batch event được ghi nhận lúc 15:00 ngày 04/12/2025:
+Ví dụ S3 object key cho một batch event được ghi nhận ngày 04/12/2025:
 
 ```text
-events/2025/12/04/15/events-a1b2c3d4.json
+events/2025/12/04/event-a1b2c3d4.json
 ```
 
 **Hình 5-6: Tổng quan Lambda Ingest**
@@ -132,10 +132,10 @@ Sơ đồ minh hoạ việc function được trigger bởi HTTP API Gateway và
 
 #### Kiểm thử end-to-end từ frontend thật
 
-1. Mở domain CloudFront của ứng dụng thương mại điện tử, ví dụ:
+1. Mở domain của Amplify app cho ứng dụng thương mại điện tử:
 
    ```text
-   https://dxxxxxxxx.cloudfront.net
+   https://main.d2q6im0b1720uc.amplifyapp.com/
    ```
 
 2. Đăng nhập qua **Amazon Cognito** bằng một tài khoản test.  

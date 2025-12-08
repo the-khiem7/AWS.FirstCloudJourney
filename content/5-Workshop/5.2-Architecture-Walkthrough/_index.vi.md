@@ -44,8 +44,8 @@ Mẫu (pattern) này giữ cho dữ liệu thô bất biến và được phân 
 
 Ảnh chụp màn hình cho thấy hai EC2 instance được sử dụng trong workshop:
 
-- `SBW_EC2_Web_OLTP` – instance public host cơ sở dữ liệu PostgreSQL OLTP.  
-- `SBW_EC2_Shiny_DW` – instance private host PostgreSQL Data Warehouse và Shiny Server.
+- `SBW_EC2_WebDB` – instance public host cơ sở dữ liệu PostgreSQL OLTP.  
+- `SBW_EC2_ShinyDWH` – instance private host PostgreSQL Data Warehouse và Shiny Server.
 
 Bên dưới danh sách instance, console EC2 hiển thị các CloudWatch metric cơ bản như CPU utilization và network traffic, có thể dùng để xác minh tình trạng “khỏe mạnh” của các instance trong lúc chạy các lab của workshop.
 
@@ -69,8 +69,8 @@ Sơ đồ minh họa:
 
 Sơ đồ minh họa một VPC duy nhất với hai subnet:
 
-- **Public Subnet – OLTP (10.0.1.0/24)**, tô màu vàng, host EC2 PostgreSQL OLTP và kết nối tới Internet Gateway.  
-- **Private Subnet – Analytics (10.0.2.0/24)**, tô màu xanh lá, host EC2 PostgreSQL Data Warehouse, R Shiny Server, ETL Lambda chạy trong VPC, và S3 Gateway VPC Endpoint (tất cả đều không có public IP).
+- **Public Subnet – OLTP (10.0.0.0/20)**, tô màu vàng, host EC2 PostgreSQL OLTP và kết nối tới Internet Gateway.  
+- **Private Subnet – Analytics & ETL (10.0.128.0/20)**, màu xanh lá, host EC2 PostgreSQL Data Warehouse, R Shiny Server, Lambda ETL chạy trong VPC và S3 Gateway VPC Endpoint (tất cả đều không có public IP).
 
 Route table của public subnet bao gồm route mặc định:
 
@@ -95,23 +95,20 @@ Route table của private subnet:
 
 **Các Subnet:**
 
-1. **Public Subnet (10.0.1.0/24) - Lớp OLTP**
+1. **Public Subnet (10.0.0.0/20) - Lớp OLTP**
    - EC2 PostgreSQL OLTP (có public IP)
    - Định tuyến traffic Internet qua Internet Gateway
    - Cho phép inbound từ Amplify và các IP admin
    - Cho phép outbound để cập nhật và gọi các API bên ngoài
 
-2. **Private Subnet 1 (10.0.2.0/24) - Lớp Analytics**
+2. **Private Subnet (10.0.128.0/20) - Lớp Analytics & ETL**
    - EC2 Data Warehouse (PostgreSQL) - không có public IP
    - EC2 R Shiny Server - không có public IP
+   - Lambda ETL (chạy trong VPC) - không có public IP
+   - S3 Gateway VPC Endpoint để truy cập S3 riêng tư
    - SSM Interface Endpoint cho Session Manager
    - Không có truy cập internet trực tiếp (không có route tới IGW)
    - Hoàn toàn cô lập khỏi internet công cộng
-
-3. **Private Subnet 2 (10.0.3.0/24) - Lớp ETL**
-   - Lambda ETL (chạy trong VPC) - không có public IP
-   - S3 Gateway VPC Endpoint để truy cập S3 riêng tư
-   - Không có truy cập internet trực tiếp (không có route tới IGW)
 
 #### Bảng định tuyến
 
@@ -119,36 +116,28 @@ Route table của private subnet:
 - `10.0.0.0/16` → Local (nội bộ VPC)
 - `0.0.0.0/0` → Internet Gateway (default route)
 
-**Private Route Table 1** (Analytics Subnet):
+**Private Route Table** (Analytics & ETL Subnet):
 - `10.0.0.0/16` → Local (chỉ nội bộ VPC)
-- **Không có default route tới Internet Gateway**
-- Truy cập admin qua SSM Interface Endpoints
-
-**Private Route Table 2** (ETL Subnet):
-- `10.0.0.0/16` → Local (nội bộ VPC)
 - S3 prefix list → S3 Gateway VPC Endpoint
 - **Không có default route tới Internet Gateway**
+- Truy cập admin qua SSM Interface Endpoints
 
 > **Thiết kế Chính**: Không triển khai NAT Gateway. Các thành phần private truy cập S3 qua Gateway VPC Endpoint, loại bỏ chi phí NAT trong khi vẫn duy trì bảo mật.
 
 #### Security Groups
 
-**SG-OLTP:**
+**sg_oltp_webDB:**
 - Inbound: `5432/tcp` từ Amplify/trusted IPs, `22/tcp` từ admin IP
 - Outbound: mặc định (tất cả được phép)
 
-**SG-DW:**
+**sg_analytics_ShinyDWH:**
 - Inbound: `5432/tcp` từ Lambda ETL SG và Shiny SG
 - Outbound: `443/tcp` tới SSM interface endpoints
 - Truy cập admin qua Session Manager (không có inbound SSH)
 
-**SG-Shiny:**
-- Inbound: hạn chế chỉ cho admin/VPN
-- Outbound: được phép tới DW (localhost/private IP)
-
-**SG-ETL-Lambda:**
+**sg_Lambda_ETL:**
 - Không có inbound (Lambda không chấp nhận inbound)
-- Outbound: được phép tới S3 endpoint + DW SG
+- Outbound: được phép tới S3 endpoint + DWH SG
 
 #### Các Dịch vụ AWS Bên ngoài
 
@@ -209,8 +198,8 @@ Các dịch vụ bên ngoài VPC tương tác với hạ tầng:
 - AWS Systems Manager (Session Manager + VPC Endpoints)
 
 **Cơ sở dữ liệu:**
-- PostgreSQL (EC2 OLTP) - cơ sở dữ liệu vận hành
-- PostgreSQL (EC2 DW) - cơ sở dữ liệu phân tích
+- PostgreSQL (EC2 OLTP) - cơ sở dữ liệu vận hành `clickstream_web`
+- PostgreSQL (EC2 DWH) - cơ sở dữ liệu phân tích `clickstream_dw`
 
 **Analytics:**
 - R Shiny Server - dashboard tương tác

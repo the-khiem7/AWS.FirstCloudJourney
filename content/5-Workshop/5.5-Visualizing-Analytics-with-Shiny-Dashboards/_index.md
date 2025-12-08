@@ -22,10 +22,10 @@ Before looking at dashboards, make sure that the Data Warehouse contains fresh d
 
 #### Step 1 – Generate new clickstream events
 
-1. Open the CloudFront domain of the e-commerce application, for example:
+1. Open the Amplify app domain of the e-commerce application:
 
    ```text
-   https://dxxxxxxxx.cloudfront.net
+   https://main.d2q6im0b1720uc.amplifyapp.com/
    ```
 
 2. Sign in with a test user via **Amazon Cognito**.  
@@ -45,14 +45,14 @@ Before looking at dashboards, make sure that the Data Warehouse contains fresh d
 You have three main options to run the ETL Lambda:
 
 - **A. Wait for the EventBridge schedule**  
-  - If the ETL rule is configured to run every 15 or 30 minutes, you can simply wait for the next trigger.
+  - The ETL rule (`SBW_ETL_HOURLY_RULE`) is configured to run every hour (`rate(1 hour)`), so you can simply wait for the next trigger.
 
 - **B. Manually trigger via EventBridge**  
   1. Open **Amazon EventBridge** console.  
-  2. Go to **Rules** and select the ETL rule, for example:
+  2. Go to **Rules** and select the ETL rule:
 
      ```text
-     clickstream-etl-schedule
+     SBW_ETL_HOURLY_RULE
      ```
 
   3. Choose **Actions → Run now** to execute the rule immediately.
@@ -61,7 +61,7 @@ You have three main options to run the ETL Lambda:
   1. Open the **Lambda Console** and select the ETL function:
 
      ```text
-     clickstream-etl-lambda
+     SBW_Lamda_ETL
      ```
 
   2. On the **Test** tab, create or reuse a test event (payload `{}` is sufficient if your code ignores the input).  
@@ -73,9 +73,9 @@ You have three main options to run the ETL Lambda:
 2. Navigate to the log group for the ETL Lambda function.  
 3. Open the most recent log stream and check for entries such as:
 
-   - “Listing S3 objects under prefix `events/YYYY/MM/DD/HH/` …”  
-   - “Read N files, parsed M events.”  
-   - “Inserted K rows into `fact_events`, L rows into `dim_products`, etc.”  
+   - "Listing S3 objects under prefix `events/YYYY/MM/DD/` …"  
+   - "Read N files, parsed M events."  
+   - "Inserted K rows into `clickstream_events` table."  
    - Any error messages or stack traces (if present).
 
 If there are errors, review:
@@ -133,11 +133,11 @@ Optional deeper checks:
 ```sql
 -- 4. Funnel-like view: from product view to add-to-cart
 SELECT
-    product_id,
+    context_product_id,
     SUM(CASE WHEN event_name = 'product_view'  THEN 1 ELSE 0 END) AS product_views,
     SUM(CASE WHEN event_name = 'add_to_cart'   THEN 1 ELSE 0 END) AS add_to_cart_events
-FROM fact_events
-GROUP BY product_id
+FROM clickstream_events
+GROUP BY context_product_id
 ORDER BY product_views DESC
 LIMIT 10;
 ```
@@ -159,35 +159,31 @@ The **R Shiny Server** runs on the same private EC2 instance as the Data Warehou
 1. Ensure the **Session Manager plugin** for the AWS CLI is installed on your local machine.  
    - Installation instructions: [AWS Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
 
-2. Run the following command to forward the Shiny port (default 3838) to your local machine:
+2. Run the following command to forward the Shiny port (3838) to your local machine:
 
    ```bash
    aws ssm start-session \
        --target <instance-id> \
        --document-name AWS-StartPortForwardingSession \
-       --parameters '{"portNumber":["3838"],"localPortNumber":["8080"]}'
+       --parameters '{"portNumber":["3838"],"localPortNumber":["3838"]}'
    ```
 
-   Replace `<instance-id>` with the EC2 instance ID of your Data Warehouse instance.
+   Replace `<instance-id>` with the EC2 instance ID of your Data Warehouse instance (`SBW_EC2_ShinyDWH`).
 
 3. Keep this terminal session open. You should see a message like:
 
    ```text
    Starting session with SessionId: ...
-   Port 8080 opened for sessionId ...
+   Port 3838 opened for sessionId ...
    ```
 
 4. Open a browser on your local machine and navigate to:
 
    ```text
-   http://localhost:8080/
+   http://localhost:3838/sbw_dashboard
    ```
 
-   or to the specific Shiny app, for example:
-
-   ```text
-   http://localhost:8080/clickstream-analytics
-   ```
+   This will load the Shiny dashboard application that visualizes the clickstream analytics data from the Data Warehouse.
 
 #### Benefits of Session Manager Port Forwarding
 

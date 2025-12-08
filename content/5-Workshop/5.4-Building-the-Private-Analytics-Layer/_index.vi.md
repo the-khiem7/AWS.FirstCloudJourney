@@ -23,19 +23,15 @@ Những thành phần này kết hợp lại tạo thành xương sống của p
 
 VPC được chia logic thành các subnet với vai trò khác nhau:
 
-- **Public Subnet – OLTP (10.0.1.0/24)**  
-  - Chứa EC2 PostgreSQL OLTP.  
+- **Public Subnet – OLTP (10.0.0.0/20)**  
+  - Chứa EC2 PostgreSQL OLTP (`SBW_EC2_WebDB`).  
   - Có route `0.0.0.0/0 → Internet Gateway (IGW)` để truy cập Internet hai chiều.
 
-- **Private Subnet – Analytics (10.0.2.0/24)**  
-  - Chứa **EC2 Data Warehouse** và **R Shiny Server**.  
+- **Private Subnet – Analytics & ETL (10.0.128.0/20)**  
+  - Chứa **EC2 Data Warehouse** (`SBW_EC2_ShinyDWH`) và **R Shiny Server**.  
+  - Chứa **Lambda ETL trong VPC** (`SBW_Lamda_ETL`) và **S3 Gateway VPC Endpoint**.  
   - **Không** có route tới Internet Gateway và **không có NAT Gateway**.  
-  - Chỉ có các route nội bộ trong VPC và kết nối tới các private subnet khác.
-
-- **Private Subnet – ETL (10.0.3.0/24)**  
-  - Chứa **Lambda ETL trong VPC** và **S3 Gateway VPC Endpoint**.  
-  - Cũng **không** có route `0.0.0.0/0` và không có NAT Gateway.  
-  - Có thể truy cập S3 một cách riêng tư qua Gateway Endpoint.
+  - Chỉ có các route nội bộ trong VPC và S3 Gateway Endpoint để truy cập S3 riêng tư.
 
 Thiết kế này đảm bảo rằng:
 
@@ -70,7 +66,7 @@ Cấu hình này đảm bảo traffic từ Lambda ETL và EC2 Data Warehouse t�
 
 5. Ở **Endpoint type**, chọn **Gateway**.  
 6. Ở **VPC**, chọn VPC của project, nơi chứa các subnet analytics và ETL.  
-7. Trong **Route tables**, chọn route table gắn với **ETL private subnet (10.0.3.0/24)** và, nếu muốn, thêm route table của **Analytics private subnet (10.0.2.0/24)** nếu bạn cũng muốn EC2 Data Warehouse truy cập S3 riêng tư.  
+7. Trong **Route tables**, chọn route table gắn với **private subnet (10.0.128.0/20)** để cả EC2 Data Warehouse và Lambda ETL đều có thể truy cập S3 riêng tư.  
 8. Ở phần **Policy**, trong workshop có thể bắt đầu với **Full access**:
 
    ```json
@@ -96,7 +92,7 @@ Cấu hình này đảm bảo traffic từ Lambda ETL và EC2 Data Warehouse t�
 Sau khi endpoint được tạo, AWS sẽ tự động thêm route vào các route table đã chọn.
 
 1. Trong **VPC Console**, mở **Route tables**.  
-2. Chọn route table dùng cho **ETL private subnet**.  
+2. Chọn route table dùng cho **private subnet (10.0.128.0/20)**.  
 3. Ở tab **Routes**, kiểm tra:
 
    - Có route local:

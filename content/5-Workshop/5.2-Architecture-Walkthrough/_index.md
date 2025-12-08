@@ -44,8 +44,8 @@ This pattern keeps raw data immutable and time-partitioned, which is convenient 
 
 The screenshot shows the two EC2 instances used in the workshop:
 
-- `SBW_EC2_Web_OLTP` – the public instance that hosts the OLTP PostgreSQL database.  
-- `SBW_EC2_Shiny_DW` – the private instance that hosts the PostgreSQL Data Warehouse and the Shiny Server.
+- `SBW_EC2_WebDB` – the public instance that hosts the OLTP PostgreSQL database.  
+- `SBW_EC2_ShinyDWH` – the private instance that hosts the PostgreSQL Data Warehouse and the Shiny Server.
 
 Below the instance list, the EC2 console displays basic CloudWatch metrics such as CPU utilization and network traffic, which can be used to verify that the instances are healthy while the workshop labs are running.
 
@@ -69,8 +69,8 @@ The diagram illustrates:
 
 The diagram illustrates a single VPC with two subnets:
 
-- **Public Subnet – OLTP (10.0.1.0/24)**, highlighted in yellow, hosting the EC2 PostgreSQL OLTP instance and connected to the Internet Gateway.  
-- **Private Subnet – Analytics (10.0.2.0/24)**, in green, hosting the EC2 PostgreSQL Data Warehouse, the R Shiny Server, the VPC-enabled ETL Lambda function, and the S3 Gateway VPC Endpoint (all with no public IP).
+- **Public Subnet – OLTP (10.0.0.0/20)**, highlighted in yellow, hosting the EC2 PostgreSQL OLTP instance and connected to the Internet Gateway.  
+- **Private Subnet – Analytics & ETL (10.0.128.0/20)**, in green, hosting the EC2 PostgreSQL Data Warehouse, the R Shiny Server, the VPC-enabled ETL Lambda function, and the S3 Gateway VPC Endpoint (all with no public IP).
 
 The public subnet route table includes a default route:
 
@@ -95,23 +95,20 @@ The private subnet route table:
 
 **Subnets:**
 
-1. **Public Subnet (10.0.1.0/24) - OLTP Layer**
+1. **Public Subnet (10.0.0.0/20) - OLTP Layer**
    - EC2 PostgreSQL OLTP (with public IP)
    - Routes internet traffic via Internet Gateway
    - Allows inbound from Amplify and admin IPs
    - Allows outbound for updates and external APIs
 
-2. **Private Subnet 1 (10.0.2.0/24) - Analytics Layer**
+2. **Private Subnet (10.0.128.0/20) - Analytics & ETL Layer**
    - EC2 Data Warehouse (PostgreSQL) - no public IP
    - EC2 R Shiny Server - no public IP
    - SSM Interface Endpoint for Session Manager
    - No direct internet access (no route to IGW)
    - Fully isolated from public internet
 
-3. **Private Subnet 2 (10.0.3.0/24) - ETL Layer**
-   - Lambda ETL (VPC-enabled) - no public IP
-   - S3 Gateway VPC Endpoint for private S3 access
-   - No direct internet access (no route to IGW)
+
 
 #### Routing Tables
 
@@ -119,36 +116,28 @@ The private subnet route table:
 - `10.0.0.0/16` → Local (VPC internal)
 - `0.0.0.0/0` → Internet Gateway (default route)
 
-**Private Route Table 1** (Analytics Subnet):
+**Private Route Table** (Analytics & ETL Subnet):
 - `10.0.0.0/16` → Local (VPC internal only)
-- **No default route to Internet Gateway**
-- Admin access via SSM Interface Endpoints
-
-**Private Route Table 2** (ETL Subnet):
-- `10.0.0.0/16` → Local (VPC internal)
 - S3 prefix list → S3 Gateway VPC Endpoint
 - **No default route to Internet Gateway**
+- Admin access via SSM Interface Endpoints
 
 > **Key Design**: No NAT Gateway deployed. Private components reach S3 via Gateway VPC Endpoint, eliminating NAT costs while maintaining security.
 
 #### Security Groups
 
-**SG-OLTP:**
+**sg_oltp_webDB:**
 - Inbound: `5432/tcp` from Amplify/trusted IPs, `22/tcp` from admin IP
 - Outbound: default (all allowed)
 
-**SG-DW:**
+**sg_analytics_ShinyDWH:**
 - Inbound: `5432/tcp` from Lambda ETL SG and Shiny SG
 - Outbound: `443/tcp` to SSM interface endpoints
 - Admin access via Session Manager (no inbound SSH)
 
-**SG-Shiny:**
-- Inbound: restricted to admin/VPN only
-- Outbound: allowed to DW (localhost/private IP)
-
-**SG-ETL-Lambda:**
+**sg_Lambda_ETL:**
 - No inbound (Lambda doesn't accept inbound)
-- Outbound: allowed to S3 endpoint + DW SG
+- Outbound: allowed to S3 endpoint + DWH SG
 
 #### External AWS Services
 
@@ -209,8 +198,8 @@ Services outside VPC that interact with infrastructure:
 - AWS Systems Manager (Session Manager + VPC Endpoints)
 
 **Databases:**
-- PostgreSQL (EC2 OLTP) - operational database
-- PostgreSQL (EC2 DW) - analytical database
+- PostgreSQL (EC2 OLTP) - `clickstream_web` operational database
+- PostgreSQL (EC2 DWH) - `clickstream_dw` analytical database
 
 **Analytics:**
 - R Shiny Server - interactive dashboards

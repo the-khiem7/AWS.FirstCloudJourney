@@ -76,8 +76,8 @@ Key characteristics:
   
 **Figure 5-5: API Gateway route for POST /clickstream**
 
-The screenshot shows the HTTP API configuration for the clickstream ingestion endpoint.  
-The `/clickstream` resource exposes a single `POST` route, which is integrated with the `clickstream-ingest` Lambda function.  
+The screenshot shows the HTTP API (`clickstream-http-api`) configuration for the clickstream ingestion endpoint.  
+The `/clickstream` resource exposes a single `POST` route, which is integrated with the `clickstream-lambda-ingest` Lambda function.  
 No authorizer is attached in this lab to keep the workshop focused on data ingestion rather than authentication.
 
 ![Figure 5-5: API Gateway route for POST /clickstream](/images/5-3-apigw-clickstream-route.png)
@@ -99,10 +99,10 @@ The **Lambda Ingest** function is responsible for the following:
      - The source IP or user agent (if needed).  
 
 3. **Batching and writing to S3**  
-   - Constructs a key in the Raw Clickstream bucket using a time-based partition pattern, for example:
+   - Constructs a key in the Raw Clickstream bucket (`clickstream-s3-ingest`) using a time-based partition pattern, for example:
 
      ```text
-     s3://<raw-bucket>/events/YYYY/MM/DD/HH/events-<uuid>.json
+     s3://clickstream-s3-ingest/events/YYYY/MM/DD/event-<uuid>.json
      ```
 
    - Writes the incoming events as a JSON array or NDJSON (newline-delimited JSON), depending on the chosen format.
@@ -111,10 +111,10 @@ The **Lambda Ingest** function is responsible for the following:
    - Logs validation errors or malformed events to **CloudWatch Logs**.  
    - Returns an appropriate HTTP status code back to API Gateway (e.g., `200` on success, `400` for invalid payload).
 
-Example S3 object key for an event batch captured on 4 December 2025 at 15:00:
+Example S3 object key for an event batch captured on 4 December 2025:
 
 ```text
-events/2025/12/04/15/events-a1b2c3d4.json
+events/2025/12/04/event-a1b2c3d4.json
 ```
 
 **Figure 5-6: Lambda Ingest function overview**
@@ -132,10 +132,10 @@ To confirm that ingestion is working as expected, two complementary tests are pe
 
 #### End-to-end test from the real frontend
 
-1. Open the CloudFront domain of the e-commerce application, for example:
+1. Open the Amplify app domain of the e-commerce application:
 
    ```text
-   https://dxxxxxxxx.cloudfront.net
+   https://main.d2q6im0b1720uc.amplifyapp.com/
    ```
 
 2. Sign in using **Amazon Cognito** with a test user account.  
