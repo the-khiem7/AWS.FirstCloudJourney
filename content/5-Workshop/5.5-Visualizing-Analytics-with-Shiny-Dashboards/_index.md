@@ -1,309 +1,97 @@
 ---
 title: "Visualizing Analytics with Shiny Dashboards"
-weight: 5
+weight: 55
 chapter: false
 pre: " <b> 5.5. </b> "
 ---
 
-In the previous sections, you ingested clickstream events into the **S3 Raw Clickstream bucket** and used a **VPC-enabled ETL Lambda** to load curated data into the **PostgreSQL Data Warehouse** in a private subnet.
+## 5.5.1 R Shiny on the Data Warehouse EC2
 
-This section focuses on the **final mile** of the pipeline:
+R Shiny is installed on `SBW_EC2_ShinyDWH` and runs alongside PostgreSQL:
 
-- Validating that the ETL job has populated the Data Warehouse with meaningful data.  
-- Using **R Shiny dashboards** running on the same EC2 instance as the Data Warehouse to explore user behaviour, funnels, and product performance.
+- Listens on port `3838`  
+- Serves the `sbw_dashboard` app  
+- Connects to `clickstream_dw` via `localhost:5432`  
 
-The goal is not only to “see some charts”, but to **connect each visualization back to the underlying data model and business questions**.
+Typical stack:
 
----
+- R + packages:
+  - `shiny`, `shinydashboard`  
+  - `DBI`, `RPostgres`  
+  - `dplyr`, `ggplot2`, etc.  
 
-### Triggering batch ETL and verifying data in the Data Warehouse
+The Shiny app is deployed under:
 
-Before looking at dashboards, make sure that the Data Warehouse contains fresh data.
-
-#### Step 1 – Generate new clickstream events
-
-1. Open the Amplify app domain of the e-commerce application:
-
-   ```text
-   https://main.d2q6im0b1720uc.amplifyapp.com/
-   ```
-
-2. Sign in with a test user via **Amazon Cognito**.  
-3. Perform a realistic browsing session, such as:
-
-   - Visit the home page and at least one category page.  
-   - Search for a product or filter by brand/category.  
-   - Open three or more product detail pages.  
-   - Add one or two items to the cart.  
-   - Remove an item, change quantity, and proceed to the checkout flow.  
-   - Optionally, complete an order so that purchase events are generated.
-
-4. Wait 1–2 minutes to ensure all events have been sent to **API Gateway → Lambda Ingest → S3 Raw Clickstream bucket**.
-
-#### Step 2 – Run the ETL job
-
-You have three main options to run the ETL Lambda:
-
-- **A. Wait for the EventBridge schedule**  
-  - The ETL rule (`SBW_ETL_HOURLY_RULE`) is configured to run every hour (`rate(1 hour)`), so you can simply wait for the next trigger.
-
-- **B. Manually trigger via EventBridge**  
-  1. Open **Amazon EventBridge** console.  
-  2. Go to **Rules** and select the ETL rule:
-
-     ```text
-     SBW_ETL_HOURLY_RULE
-     ```
-
-  3. Choose **Actions → Run now** to execute the rule immediately.
-
-- **C. Manually trigger via Lambda console**  
-  1. Open the **Lambda Console** and select the ETL function:
-
-     ```text
-     SBW_Lamda_ETL
-     ```
-
-  2. On the **Test** tab, create or reuse a test event (payload `{}` is sufficient if your code ignores the input).  
-  3. Click **Test** to invoke the ETL Lambda.
-
-#### Step 3 – Check ETL execution in CloudWatch Logs
-
-1. Open **CloudWatch Logs** in the AWS console.  
-2. Navigate to the log group for the ETL Lambda function.  
-3. Open the most recent log stream and check for entries such as:
-
-   - "Listing S3 objects under prefix `events/YYYY/MM/DD/` …"  
-   - "Read N files, parsed M events."  
-   - "Inserted K rows into `clickstream_events` table."  
-   - Any error messages or stack traces (if present).
-
-If there are errors, review:
-
-- IAM permissions for S3 and the database.  
-- VPC configuration (subnets, route tables, Gateway Endpoint).  
-- Database connectivity (host, port, credentials).
-
-**Figure 5-12: CloudWatch logs for the latest ETL run**
-
-The screenshot shows the CloudWatch log stream for a recent execution of the ETL Lambda function.  
-The `INIT_START`, `START`, `END`, and `REPORT` entries confirm that the function executed successfully, and the reported duration and memory usage are within the expected range.  
-Checking these logs helps ensure that the Data Warehouse contains fresh data before exploring the Shiny dashboards.
-
-![Figure 5-12: CloudWatch logs for the latest ETL run](/images/5-5-etl-cloudwatch-logs.png)
-
-#### Step 4 – Validate data with SQL queries
-
-Once the ETL reports success, verify that the Data Warehouse has been updated.
-
-1. Connect to the **Data Warehouse EC2 instance** using **AWS Systems Manager Session Manager** (no SSH keys or bastion hosts required).  
-2. From within the Session Manager shell, connect to PostgreSQL DW using `psql` or a graphical client:
-
-Run basic checks like:
-
-```sql
--- 1. How many events are in the fact table?
-SELECT COUNT(*) AS total_events
-FROM fact_events;
-```
-
-```sql
--- 2. Events by type (page views, product views, add-to-cart, etc.)
-SELECT event_name, COUNT(*) AS total_events
-FROM fact_events
-GROUP BY event_name
-ORDER BY total_events DESC;
-```
-
-```sql
--- 3. Top 10 most viewed products
-SELECT
-    product_id,
-    product_name,
-    COUNT(*) AS view_count
-FROM fact_events
-WHERE event_name = 'product_view'
-GROUP BY product_id, product_name
-ORDER BY view_count DESC
-LIMIT 10;
-```
-
-Optional deeper checks:
-
-```sql
--- 4. Funnel-like view: from product view to add-to-cart
-SELECT
-    context_product_id,
-    SUM(CASE WHEN event_name = 'product_view'  THEN 1 ELSE 0 END) AS product_views,
-    SUM(CASE WHEN event_name = 'add_to_cart'   THEN 1 ELSE 0 END) AS add_to_cart_events
-FROM clickstream_events
-GROUP BY context_product_id
-ORDER BY product_views DESC
-LIMIT 10;
-```
-
-Compare these numbers with your test session:
-
-- Did you view at least as many products as the query shows?  
-- Do the products you interacted with appear near the top of the list?  
-- If you completed a purchase, can you see related events in the data?
+- `/srv/shiny-server/sbw_dashboard/`  
+  - `app.R` or `ui.R` + `server.R`  
 
 ---
 
-### Accessing the Shiny dashboards (from a private EC2 instance)
+## 5.5.2 Dashboard Content
 
-The **R Shiny Server** runs on the same private EC2 instance as the Data Warehouse, without a public IP. To access it securely, use **AWS Systems Manager Session Manager port forwarding**—no SSH keys or bastion hosts required.
+The dashboard can be structured into multiple tabs, for example:
 
-#### Accessing Shiny via Session Manager Port Forwarding
+1. **Overview**
+   - Total events over selected time range  
+   - Unique users, sessions  
+   - Top event types  
 
-1. Ensure the **Session Manager plugin** for the AWS CLI is installed on your local machine.  
-   - Installation instructions: [AWS Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
+2. **Product Analytics**
+   - Top products by views (`event_name = 'product_view'`)  
+   - Conversion to add-to-cart / checkout by product  
 
-2. Run the following command to forward the Shiny port (3838) to your local machine:
+3. **Funnel Analysis**
+   - Steps:
+     - `page_view` → `product_view` → `add_to_cart` → `checkout`  
+   - Drop-off rate at each step  
 
-   ```bash
-   aws ssm start-session \
-       --target <instance-id> \
-       --document-name AWS-StartPortForwardingSession \
-       --parameters '{"portNumber":["3838"],"localPortNumber":["3838"]}'
-   ```
+4. **Time-based Trends**
+   - Events per hour / per day  
+   - Peak user activity windows  
 
-   Replace `<instance-id>` with the EC2 instance ID of your Data Warehouse instance (`SBW_EC2_ShinyDWH`).
-
-3. Keep this terminal session open. You should see a message like:
-
-   ```text
-   Starting session with SessionId: ...
-   Port 3838 opened for sessionId ...
-   ```
-
-4. Open a browser on your local machine and navigate to:
-
-   ```text
-   http://localhost:3838/sbw_dashboard
-   ```
-
-   This will load the Shiny dashboard application that visualizes the clickstream analytics data from the Data Warehouse.
-
-#### Benefits of Session Manager Port Forwarding
-
-- **No SSH exposure**: The private EC2 instance does not need inbound SSH rules or public IP addresses.  
-- **No bastion hosts**: Eliminates the need to manage and secure jump servers.  
-- **IAM-based access control**: Permissions are managed through IAM policies, with full audit trails in CloudTrail.  
-- **Encrypted tunnels**: All traffic is encrypted over HTTPS, staying within the AWS network via VPC Interface Endpoints.
+All of these visuals are powered by simple queries to `clickstream_dw.public.clickstream_events` and any aggregate tables you decide to build.
 
 ---
 
-### Exploring the dashboards
+## 5.5.3 Secure Access via SSM Session Manager
 
-Once you have access to the Shiny homepage or specific app, you should see one or more dashboards built on top of the Data Warehouse.
+Because `SBW_EC2_ShinyDWH` has no public IP and no open SSH port, access happens via **AWS Systems Manager Session Manager**.
 
-Typical views might include:
+### Steps
 
-#### Funnel / User Journey Dashboard
+1. Open **Session Manager** in the AWS console.  
+2. Start a session to instance `SBW_EC2_ShinyDWH`.  
+3. Set up **port forwarding**:
+   - `localPort = 3838`  
+   - `portNumber = 3838`  
 
-Shows how users flow through key steps such as:
+4. On your local machine, open:
+   - `http://localhost:3838/sbw_dashboard`  
 
-1. `page_view` → 2. `product_view` → 3. `add_to_cart` → 4. `checkout_start` → 5. `purchase`
-
-Common visualizations:
-
-- A funnel chart with counts at each step.  
-- Drop-off percentages between one step and the next.  
-- Filters for date ranges, device type, or traffic source.
-
-Questions you can answer:
-
-- How many users start at a product view and reach the checkout step?  
-- Where do most users abandon the journey (e.g., before add-to-cart, or during checkout)?  
-- Does the funnel performance change over time or by traffic source?
-
-#### Product Performance Dashboard
-
-Focuses on product-level metrics:
-
-- Most viewed products (`product_view` events).  
-- Products with the highest add-to-cart or purchase events.  
-- Conversion rate per product (add-to-cart / product views, purchases / product views).
-
-Possible visualizations:
-
-- Bar charts ranking products by views or purchases.  
-- Tables showing product name, category, and key engagement metrics.  
-- Filters by category, brand, or price range.
-
-Questions you can answer:
-
-- Which products attract the most attention but have low conversion?  
-- Which categories or brands perform best overall?  
-- Are there products that rarely get views and might need promotion?
-
-#### Time Series / Activity Over Time
-
-Shows how user activity changes over time:
-
-- Number of events per hour or per day.  
-- Separate lines for page views, product views, add-to-cart, purchases.  
-- Optional breakdown by device type or traffic source.
-
-Questions you can answer:
-
-- What times of day see the highest browsing activity?  
-- Are there specific days of the week with better conversion?  
-- Do special campaigns or promotions (if recorded) align with spikes in activity?
+You can now browse the dashboard as if it were running locally, while it actually lives inside a private subnet.
 
 ---
 
-### Relating dashboards back to the Data Warehouse schema
+## 5.5.4 Verifying the End-to-End Data Flow
 
-Each dashboard is powered by SQL queries against the Data Warehouse tables, such as:
+A typical validation sequence:
 
-- `fact_events` – granular event-level data.  
-- `dim_products` – product attributes (name, category, brand, etc.).  
-- `dim_users` – user attributes (registered vs. guest, segment, etc.).  
-- `fact_sessions` or `fact_funnels` – pre-aggregated session or funnel metrics (if modeled).
+1. **Generate behavior**:
+   - Open the Amplify URL: `https://main.d2q6im0b1720uc.amplifyapp.com/`  
+   - Navigate across product lists and product detail pages  
+   - Add items to the cart, proceed to checkout  
 
-When you interact with filters in Shiny (e.g., selecting a date range, category, or event type), the Shiny app typically:
+2. **Check S3**:
+   - Inspect `clickstream-s3-ingest/events/YYYY/MM/DD/`  
+   - Confirm new `event-<uuid>.json` files are present  
 
-1. Builds a SQL query using the selected parameters.  
-2. Sends the query to PostgreSQL.  
-3. Receives the aggregated results.  
-4. Renders them as charts or tables in the browser.
+3. **Run or wait for ETL**:
+   - Trigger `SBW_Lamda_ETL` manually or wait for `SBW_ETL_HOURLY_RULE`  
+   - Check CloudWatch logs to confirm rows were loaded  
 
-As an exercise, you can:
+4. **Query DW**:
+   - From the EC2 or via a DB client:
+     - `SELECT * FROM public.clickstream_events ORDER BY event_timestamp DESC LIMIT 50;`  
 
-- Open the Shiny app source code (R scripts) on the EC2 instance.  
-- Locate the SQL queries used for each widget.  
-- Compare those queries with the **manual SQL** you ran earlier in this section.
-
-This helps build confidence that:
-
-- The dashboards are consistent with the underlying data.  
-- You can reproduce key numbers directly using SQL if needed.
-
----
-
-### Summary
-
-By completing this section, you have:
-
-- Ensured that the **ETL batch job** has successfully populated the PostgreSQL Data Warehouse with fresh clickstream data.  
-- Validated the data using direct **SQL queries** (event counts, product views, basic funnel metrics).  
-- Accessed **R Shiny dashboards** running on the private EC2 instance via secure port forwarding.  
-- Explored key dashboards for user journeys, product performance, and activity over time.  
-- Connected Shiny visualizations back to the underlying Data Warehouse schema and queries.
-
-In the next section (**5.6 Summary & Clean up**), you will briefly recap the main learnings from the workshop and review which AWS resources should be stopped or deleted to avoid unnecessary costs.
-
----
-
-**Figure 5-13: Shiny dashboard for clickstream analytics**
-
-The screenshot shows a Shiny dashboard built on top of the PostgreSQL Data Warehouse:
-
-- A user journey funnel from product views to purchases.  
-- A time-series chart of events per day (page views, product views, add-to-cart, purchases).  
-- A top products table listing the items with the highest engagement and conversion.  
-- Filters at the top (date range, event type, device, traffic source) to slice and dice the analysis.
-
-![Figure 5-13: Shiny dashboard for clickstream analytics](/images/5-5-shiny-dashboard.png)
+5. **Refresh the Shiny dashboard**:
+   - Confirm charts and numbers reflect the new interactions  

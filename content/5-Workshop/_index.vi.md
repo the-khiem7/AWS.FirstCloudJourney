@@ -1,109 +1,92 @@
 ---
-title: "Workshop"
+title: "5. Workshop"
+menuTitle: "5. Workshop"
 weight: 5
 chapter: false
-pre: " <b> 5. </b> "
+pre: "<b>5. </b>"
 ---
 
-# Nền tảng Phân tích Clickstream cho Thương mại Điện tử
+# Batch-Based Clickstream Analytics Platform
 
-## Tổng quan
+![Architecture](/images/architecture.png)
+<p align="center"><em>Figure: Architecture Batch-base Clickstream Analytics Platform.</em></p>
 
-Workshop này triển khai **Nền tảng Phân tích Clickstream theo Batch** cho website thương mại điện tử bán sản phẩm máy tính.
+#### Tổng quan
 
-Hệ thống thu thập sự kiện clickstream từ frontend, lưu trữ dữ liệu JSON thô trong **Amazon S3**, xử lý sự kiện qua ETL theo lịch (AWS Lambda + EventBridge), và tải dữ liệu phân tích vào **PostgreSQL Data Warehouse** chuyên dụng trên EC2.
+Workshop này triển khai một **nền tảng phân tích Clickstream theo kiểu batch (Batch-Based Clickstream Analytics Platform)** cho một website thương mại điện tử bán sản phẩm máy tính.
 
-Dashboard phân tích được xây dựng bằng **R Shiny**, triển khai trong private subnet và truy vấn trực tiếp Data Warehouse.
+Hệ thống thu thập các sự kiện (events) clickstream từ frontend, lưu dữ liệu JSON thô trong **Amazon S3**, xử lý events theo lịch ETL định kỳ (**AWS Lambda + EventBridge**), và nạp dữ liệu phân tích vào một **PostgreSQL Data Warehouse trên EC2** nằm trong private subnet.
 
-Nền tảng được thiết kế với:
+Các dashboard phân tích được xây dựng bằng **R Shiny**, chạy trên cùng EC2 với Data Warehouse, và được truy cập thông qua **AWS Systems Manager Session Manager**.
 
-- Tách bạch rõ ràng giữa khối lượng công việc **OLTP và Analytics**
-- Backend phân tích hoàn toàn riêng tư (không có DW công khai)
-- Các thành phần AWS serverless tiết kiệm chi phí, có khả năng mở rộng
-- Tối thiểu các thành phần di động để đảm bảo độ tin cậy và đơn giản
-- Truy cập quản trị Zero-SSH qua **AWS Systems Manager Session Manager** vào DW riêng tư
+Nền tảng được thiết kế với các tiêu chí:
 
----
+- Tách biệt rõ ràng giữa workload **OLTP và Analytics**  
+- Backend analytics chỉ chạy trong private subnet (**không có truy cập public vào DW**)  
+- Sử dụng các thành phần serverless của AWS để tối ưu chi phí và khả năng mở rộng  
+- Quản trị qua **SSM Session Manager** vào EC2 chạy DW / Shiny  
+- Có thể chạy web Shiny bằng **localhost:3838**
 
-## Tổng quan Kiến trúc
+#### Các thành phần kiến trúc chính
 
-### 1. User-Facing Domain
+**Miền Frontend & OLTP**
 
-**Frontend**: Next.js trên AWS Amplify với CloudFront CDN  
-**Xác thực**: Amazon Cognito User Pool  
-**OLTP Database**: PostgreSQL trên EC2 (Public Subnet)
+- Ứng dụng Next.js: **`ClickSteam.NextJS`** được host bằng **AWS Amplify Hosting**  
+- **Amazon CloudFront** được tích hợp trong **Amplify** giúp tăng tốc độ truyền tải file tĩnh 
+- **Amazon Cognito** User Pool để xác thực người dùng  
+- PostgreSQL OLTP chạy trên EC2: **`SBW_EC2_WebDB`** (public subnet)  
+  - Database: `clickstream_web` (schema `public`)  
+  - Port: `5432`  
 
-### 2. Ingestion & Data Lake Domain
+**Miền Ingestion & Data Lake**
 
-**API Gateway**: HTTP API endpoint cho sự kiện clickstream  
-**Lambda Ingest**: Xác thực và ghi JSON thô vào S3  
-**S3 Raw Bucket**: Lưu trữ dữ liệu clickstream phân vùng theo thời gian
+- **Amazon API Gateway (HTTP API)**: `clickstream-http-api`  
+  - Route: `POST /clickstream`  
+- **Lambda Ingest**: `clickstream-lambda-ingest`  
+  - Validate payload, enrich metadata, ghi file JSON vào S3  
+- **S3 Raw Clickstream Bucket**: `clickstream-s3-ingest`  
+  - Prefix: `events/YYYY/MM/DD/`  
+  - Mẫu tên file: `event-<uuid>.json`  
+  - `RAW_BUCKET = clickstream-s3-ingest`  
 
-### 3. Analytics & Data Warehouse Domain
+**Miền Analytics & Data Warehouse**
 
-**Lambda ETL**: VPC-enabled, lập lịch bởi EventBridge  
-**Data Warehouse**: PostgreSQL trên EC2 (Private Subnet)  
-**R Shiny Server**: Dashboard tương tác (Private Subnet)  
-**Admin Access**: AWS Systems Manager Session Manager (không SSH)
+- **EC2 private cho DWH + Shiny**: `SBW_EC2_ShinyDWH` (private subnet `10.0.128.0/20`)  
+  - Database DW: `clickstream_dw` 
+  - Bảng chính: `clickstream_events` với các field:
+    - `event_id, event_timestamp, event_name`  
+    - `user_id, user_login_state, identity_source, client_id, session_id, is_first_visit`  
+    - `context_product_id, context_product_name, context_product_category, context_product_brand`  
+    - `context_product_price, context_product_discount_price, context_product_url_path`  
+  - R Shiny Server chạy trên port `3838`, web path `/sbw_dashboard`  
 
----
+- **Lambda ETL**: `SBW_Lamda_ETL` (chạy trong VPC)  
+  - Đọc JSON thô từ `clickstream-s3-ingest`  
+  - Transform thành các dòng dữ liệu dạng SQL-ready  
+  - Insert vào bảng `clickstream_dw.public.clickstream_events`  
 
-## Tech Stack
+- **EventBridge Rule**: `SBW_ETL_HOURLY_RULE`  
+  - Lịch chạy: `rate(1 hour)`  
 
-### Dịch vụ AWS
-- **AWS Amplify Hosting** — Host Next.js (SSR + static assets)
-- **Amazon CloudFront** — Phân phối CDN toàn cầu
-- **Amazon Cognito** — Xác thực và quản lý danh tính người dùng
-- **Amazon S3** — Static assets + dữ liệu clickstream thô
-- **Amazon API Gateway (HTTP API)** — Endpoint thu thập sự kiện
-- **AWS Lambda** — Serverless compute cho ingestion & ETL
-- **Amazon EventBridge** — Lập lịch ETL triggers
-- **Amazon EC2** — OLTP DB + Data Warehouse + Shiny
-- **Amazon VPC** — Cách ly mạng (public & private subnets)
-- **AWS IAM** — Kiểm soát truy cập
-- **Amazon CloudWatch** — Logging & monitoring
-- **AWS Systems Manager** — Admin tunneling vào private EC2
+- **VPC & Networking**
 
-### Cơ sở dữ liệu
-- **PostgreSQL (OLTP)** — Cơ sở dữ liệu vận hành
-- **PostgreSQL (DW)** — Data warehouse phân tích
+  - VPC CIDR: `10.0.0.0/16`  
+  - Public subnet: `10.0.0.0/20` → `SBW_Project-subnet-public1-ap-southeast-1a` (EC2 OLTP)  
+  - Private subnet: `10.0.128.0/20` → `SBW_Project-subnet-private1-ap-southeast-1a` (DW, Shiny, ETL Lambda)  
+  - **S3 Gateway VPC Endpoint** để truy cập S3 trong private network  
+  - **SSM Interface Endpoints** (SSM, SSMMessages, EC2Messages) cho Session Manager  
 
-### Analytics
-- **R Shiny Server** — Dashboard tương tác
-- **Custom ETL** — Lambda chuyển đổi S3 JSON → bảng SQL
+- **Truy cập quản trị (SSM)**  
+  - Port forwarding:
+    - `localPort = 3838`  
+    - `portNumber = 3838`  
+  - Shiny URL khi truy cập từ local: `http://localhost:3838/sbw_dashboard`  
 
----
+#### Bản đồ nội dung
 
-## Tính năng Chính
-
-- **Batch clickstream ingestion** qua API Gateway + Lambda + S3  
-- **Serverless ETL** với EventBridge scheduling  
-- **Tách biệt OLTP & Analytics** workloads  
-- **Private analytics backend** — hoàn toàn cách ly  
-- **Zero-SSH admin access** qua Session Manager  
-- **Tối ưu chi phí** — Không NAT Gateway, dùng S3 Gateway Endpoint  
-- **Kết nối PostgreSQL trực tiếp** từ Amplify dùng Prisma
-
----
-
-## Yêu cầu Tiên quyết
-
-Trước khi bắt đầu các phần chi tiết (5.1–5.6), bạn nên có:
-
-- Hiểu biết cơ bản về **dịch vụ AWS** (EC2, S3, Lambda, API Gateway, VPC, IAM)
-- Kiến thức thực hành về **SQL** và **PostgreSQL**
-- Hiểu biết về **ứng dụng web** (HTTP, JSON, REST APIs)
-- Tài khoản AWS với quyền tạo VPC endpoints, Lambda functions, EC2 instances, S3 buckets, và EventBridge rules
-
-> **Lưu ý**: Workshop này giả định rằng hạ tầng cốt lõi (VPC, subnets, EC2, Lambda, API Gateway, S3) đã được cung cấp sẵn qua Infrastructure-as-Code (Terraform/CloudFormation).
-
----
-
-## Nội dung
-
-1. [Mục tiêu & Phạm vi](5.1-Objectives-&-Scope) — Bối cảnh nghiệp vụ và mục tiêu học tập
-2. [Kiến trúc Chi tiết](5.2-Architecture-Walkthrough) — Kiến trúc kỹ thuật chi tiết
-3. [Triển khai Thu thập Clickstream](5.3-Implementing-Clickstream-Ingestion) — Thiết lập API Gateway + Lambda
-4. [Xây dựng Lớp Phân tích Riêng tư](5.4-Building-the-Private-Analytics-Layer) — ETL Lambda + Data Warehouse
-5. [Trực quan hóa bằng Shiny Dashboards](5.5-Visualizing-Analytics-with-Shiny-Dashboards) — Triển khai R Shiny
-6. [Tổng kết & Dọn dẹp](5.6-Summary-&-Clean-up) — Bài học chính và dọn dẹp tài nguyên
+1. **[5.1. Objectives & Scope](5.1-objectives--scope/)**  
+2. **[5.2. Architecture Walkthrough](5.2-architecture-walkthrough/)**  
+3. **[5.3. Implementing Clickstream Ingestion](5.3-implementing-clickstream-ingestion/)**  
+4. **[5.4. Building the Private Analytics Layer](5.4-building-private-analytics-layer/)**  
+5. **[5.5. Visualizing Analytics with Shiny Dashboards](5.5-visualizing-analytics-with-shiny-dashboards/)**  
+6. **[5.6. Summary & Clean up](5.6-summary-cleanup/)**

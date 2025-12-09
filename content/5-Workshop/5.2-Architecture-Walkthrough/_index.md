@@ -1,216 +1,187 @@
 ---
 title: "Architecture Walkthrough"
-weight: 2
+weight: 52
 chapter: false
 pre: " <b> 5.2. </b> "
 ---
 
-This section provides a high-level walkthrough of the overall architecture before diving into the hands-on steps.
-
-### User-facing Domain
-
-- Frontend: **Next.js** hosted on **AWS Amplify**, fronted by **Amazon CloudFront**.  
-- Authentication: end users sign in via an **Amazon Cognito User Pool**.  
-- Operational database: **PostgreSQL OLTP** running on an **EC2 instance** in the **public subnet**.  
-- Connectivity: Amplify connects to the OLTP EC2 instance via the Internet Gateway using Prisma, with `DATABASE_URL` pointing to the public endpoint of the EC2 instance.
-
-> In this design, the OLTP database is intentionally left in a public subnet to keep the connection from Amplify simple. In a production-grade system, OLTP would typically reside in private subnets behind an internal API layer.
-
-### Ingestion & Data Lake Domain
-
-- The frontend sends HTTP events to **Amazon API Gateway (HTTP API)**, route `POST /clickstream`.  
-- A **Lambda Ingest** function:
-  - Validates the incoming payload.  
-  - Enriches metadata such as timestamps, user/session information, and product context.  
-  - Writes **raw JSON** into an **S3 Raw Clickstream bucket** using a partitioned directory structure:
-
-  ```text
-  s3://<raw-bucket>/events/YYYY/MM/DD/HH/events-<uuid>.json
-  ```
-
-This pattern keeps raw data immutable and time-partitioned, which is convenient for batch ETL jobs.
-
-### Analytics & Data Warehouse Domain
-
-- A **VPC-enabled ETL Lambda** runs inside a **private subnet** dedicated to analytics/ETL.  
-- The ETL Lambda reads data from S3 via an **S3 Gateway VPC Endpoint**, then:
-  - Cleans and normalizes events.  
-  - Converts JSON logs into SQL-friendly analytical tables (facts and dimensions).  
-  - Writes data into a **PostgreSQL Data Warehouse** hosted on an EC2 instance in a **separate private subnet**.
-
-- An **R Shiny Server** runs on the same EC2 instance as the Data Warehouse and connects through localhost/private IP. It renders interactive dashboards on top of the DW schema.
-  
-**Figure 5-2: EC2 instances and basic CloudWatch metrics**
-
-The screenshot shows the two EC2 instances used in the workshop:
-
-- `SBW_EC2_WebDB` – the public instance that hosts the OLTP PostgreSQL database.  
-- `SBW_EC2_ShinyDWH` – the private instance that hosts the PostgreSQL Data Warehouse and the Shiny Server.
-
-Below the instance list, the EC2 console displays basic CloudWatch metrics such as CPU utilization and network traffic, which can be used to verify that the instances are healthy while the workshop labs are running.
-
-![Figure 5-2: EC2 instances and basic CloudWatch metrics](/images/5-b-ec2-instances-metrics.png)
-
-**Figure 5-3: Overall Clickstream Analytics Architecture**  
-
-The diagram illustrates:
-
-- Outside the VPC: Amazon Cognito, Amazon CloudFront, AWS Amplify, Amazon API Gateway, Lambda Ingest, and Amazon EventBridge.  
-- Inside the VPC:  
-  - **Public Subnet – OLTP (10.0.0.0/20)**: EC2 PostgreSQL OLTP instance (`SBW_EC2_WebDB`) and the Internet Gateway.  
-  - **Private Subnet – Analytics & ETL (10.0.128.0/20)**: EC2 PostgreSQL Data Warehouse + R Shiny Server (`SBW_EC2_ShinyDWH`), VPC-enabled ETL Lambda (`SBW_Lamda_ETL`), S3 Gateway VPC Endpoint, and 3 SSM Interface VPC Endpoints (all without public IPs).  
-- Numbered arrows (1)–(13) show the main flows: user login, browsing, clickstream ingestion, batch ETL, loading data into the DW, and Shiny visualization.
-
-![Figure 5-3: Overall Clickstream Analytics Architecture for the e-commerce platform](/images/5-1-clickstream-architecture.png)
+![Architecture](/images/architecture.png)
+<p align="center"><em>Figure: Architecture Batch-base Clickstream Analytics Platform.</em></p>
 
 
-**Figure 5-4: VPC Network Layout (OLTP & Analytics)**
+## 5.2.1 User-Facing Domain
 
-The diagram illustrates a single VPC with two subnets:
+### Frontend – Amplify + CloudFront + Cognito
 
-- **Public Subnet – OLTP (10.0.0.0/20)**, highlighted in yellow, hosting the EC2 PostgreSQL OLTP instance (`SBW_EC2_WebDB`) and connected to the Internet Gateway.  
-- **Private Subnet – Analytics & ETL (10.0.128.0/20)**, in green, hosting:
-  - EC2 PostgreSQL Data Warehouse + R Shiny Server (`SBW_EC2_ShinyDWH`)
-  - VPC-enabled ETL Lambda function (`SBW_Lamda_ETL`)
-  - S3 Gateway VPC Endpoint (for S3 access)
-  - 3 SSM Interface VPC Endpoints (for secure admin access: `ssm`, `ssmmessages`, `ec2messages`)
-  - All components have no public IP
+- **Next.js app**: `ClickSteam.NextJS`  
+- Hosted by **AWS Amplify Hosting** with an integrated CloudFront distribution.  
+- Example URL:  
+  - `https://main.d2q6im0b1720uc.amplifyapp.com/`  
+- **Amazon Cognito User Pool** handles user registration, login, and ID tokens.  
+- The frontend:
+  - Renders product catalog pages (SSR)  
+  - Uses Cognito tokens to know if a user is logged in  
+  - Sends clickstream events to `clickstream-http-api`  
 
-The public subnet route table includes a default route:
+### OLTP Database – `SBW_EC2_WebDB` (Public Subnet)
 
-- `0.0.0.0/0 → Internet Gateway (IGW)`
+- EC2 instance: `SBW_EC2_WebDB` in public subnet `SBW_Project-subnet-public1-ap-southeast-1a`  
+- PostgreSQL listening on port `5432`  
+- Database: `clickstream_web` (schema `public`)  
 
-The private subnet route table:
+Tables include (simplified):
 
-- Has `10.0.0.0/16 → local` for internal VPC traffic.  
-- Includes a route to the S3 prefix list via the **S3 Gateway VPC Endpoint**.  
-- Does **not** have any `0.0.0.0/0` route and does **not** use a NAT Gateway.
+- `users`  
+- `products`  
+- `orders`  
+- `order_items`  
+- `inventory`  
 
-![Figure 5-4: VPC network layout for OLTP and Analytics](/images/5-2-vpc-network.png)
+The Amplify app connects via **Prisma** using `DATABASE_URL` to this EC2’s public endpoint.  
+> In a stricter production design, this OLTP DB would typically be on Amazon RDS in private subnets behind an API layer. For this workshop, we accept a public EC2 DB to keep the focus on the analytics side.
 
 ---
 
-### Networking & Security Design
+## 5.2.2 Ingestion & Data Lake Domain
 
-#### VPC Layout
+### API Gateway HTTP API – `clickstream-http-api`
 
-- **VPC CIDR**: `10.0.0.0/16`
-- **Internet Gateway (IGW)**: Attached to VPC, provides bidirectional connectivity for public subnet resources
+- Public HTTP API that exposes:
+  - `POST /clickstream`  
+- Integration: Lambda `clickstream-lambda-ingest`  
 
-**Subnets:**
+### Lambda Ingest – `clickstream-lambda-ingest`
 
-1. **Public Subnet (10.0.0.0/20) - OLTP Layer**
-   - EC2 PostgreSQL OLTP (with public IP)
-   - Routes internet traffic via Internet Gateway
-   - Allows inbound from Amplify and admin IPs
-   - Allows outbound for updates and external APIs
+- Stateless function (non-VPC) that:
+  - Receives JSON payloads from the frontend  
+  - Validates and enriches the events (timestamps, session IDs, login state, product context…)  
+  - Writes raw JSON to S3 bucket `clickstream-s3-ingest` using a path like:
+    - `events/YYYY/MM/DD/event-<uuid>.json`  
 
-2. **Private Subnet (10.0.128.0/20) - Analytics & ETL Layer**
-   - EC2 Data Warehouse (`SBW_EC2_ShinyDWH`): PostgreSQL DWH + R Shiny Server (no public IP)
-   - Lambda ETL (`SBW_Lamda_ETL`) with VPC attachment (no public IP)
-   - S3 Gateway VPC Endpoint (for private S3 access)
-   - 3 SSM Interface VPC Endpoints: `ssm`, `ssmmessages`, `ec2messages` (for secure Session Manager access)
-   - No direct internet access (no route to IGW)
-   - Fully isolated from public internet
+IAM for this function is scoped down to:
 
+- `s3:PutObject` on `clickstream-s3-ingest`  
+- CloudWatch Logs permissions  
 
+### S3 Raw Clickstream Bucket – `clickstream-s3-ingest`
 
-#### Routing Tables
+- Region: `ap-southeast-1` (Singapore)  
+- Bucket for **raw clickstream JSON** only:  
+  - No processed/curated data here  
+- Partitioning:
+  - `events/YYYY/MM/DD/`  
+- File naming:
+  - `event-<uuid>.json`  
 
-**Public Route Table** (Public Subnet):
-- `10.0.0.0/16` → Local (VPC internal)
-- `0.0.0.0/0` → Internet Gateway (default route)
-
-**Private Route Table** (Analytics & ETL Subnet):
-- `10.0.0.0/16` → Local (VPC internal only)
-- S3 prefix list → S3 Gateway VPC Endpoint
-- **No default route to Internet Gateway**
-- Admin access via 3 SSM Interface Endpoints (`ssm`, `ssmmessages`, `ec2messages`)
-
-> **Key Design**: No NAT Gateway deployed. Private components reach S3 via Gateway VPC Endpoint and use SSM Interface Endpoints for admin access, eliminating NAT costs while maintaining security.
-
-#### Security Groups
-
-**sg_oltp_webDB:**
-- Inbound: `5432/tcp` from Amplify/trusted IPs, `22/tcp` from admin IP
-- Outbound: default (all allowed)
-
-**sg_analytics_ShinyDWH:**
-- Inbound: `5432/tcp` from Lambda ETL SG, `3838/tcp` for Shiny (via SSM port forwarding), `443/tcp` to SSM Interface Endpoints
-- Outbound: `443/tcp` to S3 Gateway Endpoint and SSM Interface Endpoints
-- Admin access via Session Manager through SSM Interface Endpoints (no inbound SSH)
-
-**sg_Lambda_ETL:**
-- No inbound (Lambda doesn't accept inbound)
-- Outbound: allowed to S3 Gateway Endpoint + DWH SG (`5432/tcp`)
-
-**sg_ec2_VPC_Interface_endpoint_SSM:**
-- Inbound: `443/tcp` from `sg_analytics_ShinyDWH`
-- Outbound: All traffic (to AWS Systems Manager services)
-- Serves 3 Interface Endpoints: `ssm`, `ssmmessages`, `ec2messages`
-
-#### External AWS Services
-
-Services outside VPC that interact with infrastructure:
-
-- **AWS Amplify Hosting**: Connects to OLTP EC2 via Internet Gateway using Prisma
-- **Amazon CloudFront**: Distributes static assets globally
-- **Amazon Cognito**: Regional auth service, no VPC interaction
-- **Amazon API Gateway**: Entry point for clickstream events, invokes Lambda Ingest
-- **Amazon EventBridge**: Triggers scheduled ETL jobs (Lambda ETL in VPC)
-- **AWS Systems Manager**: Admin access via VPC Interface Endpoints (no SSH)
+A separate bucket, `clickstream-s3-sbw`, hosts **website assets** (product images, static files) and is not used for raw clickstream events.
 
 ---
 
-### Data Flow Summary
+## 5.2.3 Analytics & Data Warehouse Domain
 
-**User Interaction Flow:**
-1. User accesses via CloudFront → Amplify Hosting
-2. User authenticates via Cognito
-3. Amplify SSR/API queries OLTP EC2 via Internet Gateway using Prisma
+### EC2 DW + Shiny – `SBW_EC2_ShinyDWH` (Private Subnet)
 
-**Clickstream Ingestion:**
-4. Frontend sends events to API Gateway
-5. Lambda Ingest writes raw JSON to S3 Raw Clickstream Bucket
+- EC2 instance in private subnet: `SBW_Project-subnet-private1-ap-southeast-1a`  
+- No public IP  
+- Attached IAM role with `AmazonSSMManagedInstanceCore`  
 
-**Batch ETL Processing:**
-6. EventBridge (cron schedule, e.g. every 30 min) triggers Lambda ETL
-7. Lambda ETL (VPC-enabled in Private Subnet 2):
-   - Reads raw files from S3 via Gateway VPC Endpoint
-   - Cleans, normalizes, sessionizes events
-   - Connects to PostgreSQL DW (Private Subnet 1) via VPC routing
-   - Inserts processed data into DW tables
+On this instance:
 
-**Analytics Access:**
-8. R Shiny Server (same EC2 as DW) connects via localhost
-9. Admin uses AWS Systems Manager Session Manager port-forwarding via SSM interface endpoints
+1. **PostgreSQL Data Warehouse**
+   - DB: `clickstream_dw` (schema `public`)  
+   - Main table: `clickstream_events` with fields:
+     - Event info: `event_id`, `event_timestamp`, `event_name`  
+     - User/session info: `user_id`, `user_login_state`, `identity_source`, `client_id`, `session_id`, `is_first_visit`  
+     - Product context: `context_product_id`, `context_product_name`, `context_product_category`, `context_product_brand`, `context_product_price`, `context_product_discount_price`, `context_product_url_path`  
+
+2. **R Shiny Server**
+   - Listens on port `3838`  
+   - Hosts dashboard app: `sbw_dashboard`  
+   - Local URL: `http://localhost:3838/sbw_dashboard`  
+
+### ETL Lambda – `SBW_Lamda_ETL` (VPC-Enabled)
+
+- Lambda function configured to run **inside the VPC**:
+  - Subnet: `SBW_Project-subnet-private1-ap-southeast-1a`  
+  - Security group: `sg_Lambda_ETL`  
+- Environment variables:
+  - `DWH_HOST`, `DWH_PORT=5432`, `DWH_USER`, `DWH_PASSWORD`, `DWH_DATABASE=clickstream_dw`  
+  - `RAW_BUCKET=clickstream-s3-ingest`  
+  - `AWS_REGION=ap-southeast-1`  
+
+The ETL Lambda:
+
+- Lists new raw event files in `clickstream-s3-ingest/events/YYYY/MM/DD/`  
+- Reads and parses JSON  
+- Converts them into rows for `clickstream_events`  
+- Inserts batched data into the Data Warehouse  
+
+### EventBridge Rule – `SBW_ETL_HOURLY_RULE`
+
+- Schedules ETL execution using:
+  - `rate(1 hour)`  
+- Target: `SBW_Lamda_ETL`  
+- Ensures new clickstream events are processed at least once per hour.
 
 ---
 
-### Key Features
+## 5.2.4 Networking & Security Design
 
-- Batch clickstream ingestion (API Gateway + Lambda + S3)  
-- Serverless ETL with EventBridge scheduling  
-- Clear OLTP vs Analytics separation  
-- R Shiny dashboards (fully private)  
-- Zero-SSH admin via SSM Session Manager  
-- Cost-optimized (no NAT Gateway, S3 Gateway Endpoint, Lambda compute)  
-- Direct PostgreSQL connectivity from Amplify using Prisma
+### VPC & Subnets
+
+- VPC CIDR: `10.0.0.0/16`  
+- Public subnet:
+  - `10.0.0.0/20` – `SBW_Project-subnet-public1-ap-southeast-1a` (OLTP EC2)  
+- Private subnet:
+  - `10.0.128.0/20` – `SBW_Project-subnet-private1-ap-southeast-1a` (DW, Shiny, ETL)  
+
+**Public Route Table**
+
+- `10.0.0.0/16 → local`  
+- `0.0.0.0/0 → Internet Gateway`  
+
+**Private Route Table**
+
+- `10.0.0.0/16 → local`  
+- S3 prefix list → Gateway VPC Endpoint for S3  
+- No `0.0.0.0/0` to IGW or NAT Gateway  
+
+> Key decision: **No NAT Gateway**.  
+> Private components (DW, Shiny, ETL) reach S3 via the Gateway Endpoint, and are managed via SSM Interface Endpoints.
+
+### VPC Endpoints
+
+- **Gateway Endpoint** for S3:
+  - Allows private access to `clickstream-s3-ingest` from ETL Lambda and DW EC2.  
+- **Interface Endpoints**:
+  - `com.amazonaws.ap-southeast-1.ssm`  
+  - `com.amazonaws.ap-southeast-1.ssmmessages`  
+  - `com.amazonaws.ap-southeast-1.ec2messages`  
+
+These enable **SSM Session Manager** traffic to stay within AWS private networking.
+
+### Security Groups
+
+- `sg_oltp_webDB`
+  - Inbound:
+    - `5432/tcp` from Amplify / admin IPs  
+    - `22/tcp` from admin IP (optional; can be replaced by SSM)  
+- `sg_analytics_ShinyDWH`
+  - Inbound:
+    - `5432/tcp` from `sg_Lambda_ETL`  
+    - `3838/tcp` for Shiny (accessed via SSM port forward only)  
+- `sg_Lambda_ETL`
+  - Outbound to `sg_analytics_ShinyDWH` on `5432`  
+  - Outbound to S3 via Gateway Endpoint  
+- `sg_ec2_VPC_Interface_endpoint_SSM`
+  - Inbound `443/tcp` from private subnets for SSM endpoints  
 
 ---
 
-### Tech Stack Summary
+## 5.2.5 Mapping
 
-**AWS Services:**
-- AWS Amplify Hosting, CloudFront, Cognito
-- Amazon S3, API Gateway, Lambda, EventBridge
-- Amazon EC2, VPC, IAM, CloudWatch
-- AWS Systems Manager (Session Manager + VPC Endpoints)
-
-**Databases:**
-- PostgreSQL (EC2 OLTP) - `clickstream_web` operational database
-- PostgreSQL (EC2 DWH) - `clickstream_dw` analytical database
-
-**Analytics:**
-- R Shiny Server - interactive dashboards
-- Custom ETL logic - Lambda transforming S3 JSON → SQL tables
+- **VPC + EC2 setup** → see **LAB1 – Networking & EC2**  
+- **S3 + Ingestion Lambda + API Gateway** → see **LAB2 – S3, Lambda Ingest & API Gateway**  
+- **ETL Lambda + EventBridge + DW** → see **LAB3 – EventBridge & Lambda ETL**  
+- **Amplify Frontend + Clickstream SDK** → see **LAB4 – Frontend (Amplify) & Clickstream SDK**  
+- **R Shiny + End-to-End validation** → see **LAB5 – R Shiny Analytics & Validation**  

@@ -1,266 +1,176 @@
 ---
-title: "Implementing Clickstream Ingestion"
-weight: 3
+title: "Triển khai thu nhận Clickstream"
+weight: 53
 chapter: false
 pre: " <b> 5.3. </b> "
 ---
 
-Phần này mô tả chi tiết cách các sự kiện clickstream được tạo ra trong trình duyệt, gửi tới **Amazon API Gateway**, được xử lý bởi **Lambda Ingest**, và cuối cùng được lưu dưới dạng các file JSON thô trong **S3 Raw Clickstream bucket**.
+## 5.3.1 Tổng quan luồng thu nhận
 
-Đường ingest là **điểm vào của toàn bộ nền tảng phân tích**: nếu sự kiện không được thu thập hoặc lưu trữ đúng ở bước này, thì các bước ETL phía sau và các dashboard sẽ không còn đáng tin cậy.
+Luồng dữ liệu mức cao:
+
+1. Người dùng tương tác với frontend Next.js (`ClickSteam.NextJS`) được host trên Amplify.  
+2. JavaScript phía frontend đóng gói metadata clickstream (page/user/session/product) thành payload JSON.  
+3. Trình duyệt gửi yêu cầu `POST` tới `clickstream-http-api` tại `POST /clickstream`.  
+4. API Gateway chuyển tiếp yêu cầu tới `clickstream-lambda-ingest`.  
+5. Lambda Ingest bổ sung metadata `_ingest` và ghi mỗi sự kiện thành một tệp JSON vào:
+   - `s3://clickstream-s3-ingest/events/YYYY/MM/DD/HH/event-<uuid>.json` (phân vùng theo giờ UTC)  
+
+Thiết kế giữ **stateless** và **append-only**, phù hợp cho ETL lô phía sau và chèn idempotent.
 
 ---
 
-### Sinh sự kiện ở frontend (Frontend event generation)
+## 5.3.2 Thiết kế S3 Bucket
 
-Frontend của site thương mại điện tử được xây bằng **Next.js** và host trên **AWS Amplify**. Một module tracking phía client chịu trách nhiệm thu thập hành vi của người dùng và gửi chúng dưới dạng các sự kiện clickstream.
+Hai bucket liên quan:
 
-Các hành vi điển hình nên được ghi lại bao gồm:
+1. **Bucket cho các Asset** - `clickstream-s3-sbw`  
+   - Lưu trữ tài nguyên website: ảnh sản phẩm, tệp tĩnh.  
+   - Không dùng cho sự kiện clickstream.
 
-- **Page view**: trang landing, trang danh mục, trang kết quả tìm kiếm, trang chi tiết sản phẩm.  
-- **Tương tác với sản phẩm**: click vào thẻ sản phẩm, xem chi tiết sản phẩm, thêm/bớt sản phẩm vào/khỏi giỏ hàng.  
-- **Các bước checkout**: bắt đầu checkout, nhập thông tin giao hàng, đặt hàng.  
-- **Thông tin session và danh tính**: user ID (nếu đã đăng nhập), session ID, login state, client ID.
+2. **Bucket Clickstream RAW** - `clickstream-s3-ingest`  
+   - Chỉ lưu sự kiện clickstream JSON thô.  
+   - Phân vùng theo giờ UTC: `events/YYYY/MM/DD/HH/`  
+   - Đặt tên tệp: `event-<uuid>.json`  
 
-Mã tracking ở phía frontend thường thực hiện các bước sau:
+Phân vùng theo giờ giúp ETL lô dễ hơn (vd xử lý giờ trước hoặc prefix ngày/giờ cụ thể).
 
-1. Lắng nghe các sự kiện trong UI (ví dụ: page load, button click).  
-2. Tạo một payload JSON với tối thiểu các trường:
+![Sự kiện bucket S3 RAW](/images/aws-s3-clickstream-ingest-events.png)
 
-   - `event_id` – định danh duy nhất cho event.  
-   - `event_name` – ví dụ: `"page_view"`, `"product_view"`, `"add_to_cart"`.  
-   - `event_timestamp` – timestamp phía client (ISO 8601 hoặc epoch).  
-   - `user_id` / `identity_source` – nếu người dùng đã đăng nhập (ví dụ: Cognito user sub).  
-   - `session_id` / `client_id` – định danh session hoặc trình duyệt.  
-   - `product_id`, `product_name`, `product_category`, v.v. cho các event liên quan tới sản phẩm.  
-   - `page_url`, `referrer`, các trường `utm_*` để gắn nguồn traffic (tuỳ chọn).
+---
 
-3. Gửi payload JSON qua HTTPS tới endpoint của API Gateway (xem mục 5.3.2).
+## 5.3.3 Thiết kế Lambda Ingest - `clickstream-lambda-ingest`
 
-Ví dụ một payload JSON tối thiểu được gửi từ trình duyệt:
+![Lambda Ingest](/images/aws-lambda-clickstream-ingest-config.png)
 
-```json
-{
-  "event_name": "product_view",
-  "event_timestamp": "2025-12-04T15:23:45.123Z",
-  "user_id": "user_123",
-  "login_state": "logged_in",
-  "session_id": "session_abc",
-  "client_id": "browser_xyz",
-  "product_id": "SKU-12345",
-  "product_name": "Gaming Laptop 15 inch",
-  "product_category": "Laptops",
-  "product_price": 1299.0,
-  "page_url": "/products/sku-12345"
-}
+### Nhiệm vụ
+
+Hàm `clickstream-lambda-ingest`:
+
+- Phân tích payload JSON nhận từ API Gateway.  
+- Chỉ thêm metadata `_ingest`: `receivedAt`, `sourceIp`, `userAgent`, `method`, `path`, `requestId`, `apiId`, `stage`, `traceId`.  
+- Ghi phần thân sự kiện **đúng như client gửi** (không tự điền user/session/product phía server) vào S3.
+
+### Quyền IAM
+
+Vai trò thực thi cần:
+
+- `s3:PutObject` trên: `arn:aws:s3:::clickstream-s3-ingest/events/*`  
+- Các API CloudWatch Logs để ghi log.
+
+Hàm không cần quyền đọc.
+
+---
+
+## 5.3.4 API Gateway HTTP API - `clickstream-http-api`
+
+HTTP API cung cấp endpoint HTTPS công khai cho ingestion:
+
+- Route:
+  - `POST /clickstream` -> Lambda `clickstream-lambda-ingest`  
+
+![Route POST /clickstream](/images/aws-apigw-clickstream-routes.png)
+
+Tùy chọn khuyến nghị:
+
+- Bật **CORS** để frontend Amplify có thể gọi từ domain của nó.  
+- Bật **access log** tới CloudWatch log group để debug.  
+- (Tùy chọn) Gắn **API key** hoặc **Cognito authorizer** nếu muốn hạn chế ingestion.
+
+---
+
+## 5.3.5 Frontend Clickstream Publisher (Logic)
+
+### Danh tính & tính idempotent
+- Sinh `eventId` cho mỗi sự kiện (UUID) để đảm bảo nguyên lý idempotent.
+- Giữ `clientId` trong `localStorage` (cố định theo trình duyệt).
+- Giữ `sessionId` trong `sessionStorage` (timeout nhàn rỗi 30 phút) và `isFirstVisit`.
+
+### Metadata người dùng, trang và click
+- Người dùng/xác thực (nếu có): `userId`, `userLoginState`, tùy chọn `identity_source`.
+- Trang/click: `pageUrl`, `referrer`, metadata phần tử cho click (tag/id/role/text/dataset).
+
+### Ngữ cảnh sản phẩm
+- Gửi dưới dạng `product.{id,name,category,brand,price,discountPrice,urlPath}`; ETL ánh xạ tới các cột DW `context_product_*`.
+
+### Phạm vi sự kiện
+- Tự động: `page_view`, `click` toàn cục.
+- Tùy chỉnh/sản phẩm: `home_view`, `category_view`, `product_view`, `add_to_cart_click`, `remove_from_cart_click`, `wishlist_toggle`, `share_click`, `login_open`, `login_success`, `logout`, `checkout_start`, `checkout_complete`.
+
+### Mapping sự kiện domain 
+- `home_view`: load trang chủ (component tracker).
+- `category_view`: render danh sách danh mục (slug/params).
+- `product_view`: render chi tiết sản phẩm (có ngữ cảnh sản phẩm).
+- `add_to_cart_click` / `remove_from_cart_click`: handler thêm/xóa giỏ.
+- `wishlist_toggle`: handler nút wishlist.
+- `share_click`: handler nút chia sẻ.
+- `login_open` / `login_success` / `logout`: luồng auth.
+- `checkout_start` / `checkout_complete`: bước vào checkout và hoàn tất.
+
+### Component & wiring
+- `lib/clickstreamClient.ts`: xử lý danh tính/phiên, builder cơ sở, log console, `fetch` fire-and-forget tới `NEXT_PUBLIC_CLICKSTREAM_ENDPOINT` (biến môi trường bắt buộc).
+- `lib/clickstreamEvents.ts`: helper domain bọc `trackCustom` và dựng ngữ cảnh sản phẩm/giỏ/đơn hàng.
+- `contexts/ClickstreamProvider.tsx` + `app/layout.tsx`: nối provider toàn cục, tự động `page_view`, listener click toàn cục.
+- Component tracker: `HomeTracker.tsx`, `CategoryTracker.tsx`, `ProductViewTracker.tsx` bỏ qua auto page_view và phát sự kiện domain.
+- UI đã gắn: `AddToCartButton.tsx`, `FavoriteButton.tsx`, `app/(client)/cart/page.tsx` phát sự kiện thêm/xóa giỏ, wishlist, checkout và đánh dấu nút với `global-clickstream-ignore-click` để tránh click toàn cục trùng lặp.
+
+### Hành vi runtime
+- Chỉ chạy phía client (không có hiệu ứng SSR).
+- Log mọi sự kiện lên console; nếu thiếu endpoint, chạy dry-run và cảnh báo một lần.
+- Lỗi mạng không chặn UI.
+
+## 5.3.6 Chiếu trường (frontend -> S3 -> DW)
+
+| Trường / Khối          | Payload frontend                              | Raw S3 (sau Ingest)                                             | DW (PostgreSQL)                               | Ghi chú                                  |
+| ---                    | ---                                           | ---                                                             | ---                                           | ---                                      |
+| event_id               | `eventId` sinh ở client                       | giữ nguyên payload                                              | `event_id` (ánh xạ từ eventId; ETL fallback UUID) | Khóa chính, ON CONFLICT DO NOTHING      |
+| event_timestamp        | -                                             | - (có LastModified của S3)                                      | `_ingest.receivedAt` > payload > LastModified | ETL suy ra                               |
+| event_name             | `eventName`                                   | `eventName`                                                     | `event_name`                                  |                                           |
+| page_url               | `pageUrl`                                     | `pageUrl`                                                       | -                                             | Không lưu trong DW                       |
+| referrer               | `referrer`                                    | `referrer`                                                      | -                                             | Không lưu trong DW                       |
+| user_id                | `userId`                                      | `userId`                                                        | `user_id`                                     |                                           |
+| user_login_state       | `userLoginState`                              | `userLoginState`                                                | `user_login_state`                            |                                           |
+| identity_source        | tùy chọn                                      | tùy chọn                                                        | `identity_source`                             | Cần frontend/auth cung cấp               |
+| client_id              | `clientId`                                    | `clientId`                                                      | `client_id`                                   |                                           |
+| session_id             | `sessionId`                                   | `sessionId`                                                     | `session_id`                                  |                                           |
+| is_first_visit         | `isFirstVisit`                                | `isFirstVisit`                                                  | `is_first_visit`                              |                                           |
+| product id             | `product.id`                                  | `product.id`                                                    | `context_product_id`                          |                                           |
+| product name           | `product.name`                                | `product.name`                                                  | `context_product_name`                        |                                           |
+| product category       | `product.category`                            | `product.category`                                              | `context_product_category`                    |                                           |
+| product brand          | `product.brandName` / `brand?.name` / `brand?.title` / `brand` | `product.brand` hoặc `product.brandName`                        | `context_product_brand`                       | Frontend ánh xạ brand từ các trường DB  |
+| product price          | `product.price`                               | `product.price`                                                 | `context_product_price`                       | BIGINT                                   |
+| product discount price | `product.discountPrice`                       | `product.discountPrice`                                         | `context_product_discount_price`              | BIGINT                                   |
+| product url path       | `product.urlPath`                             | `product.urlPath`                                               | `context_product_url_path`                    |                                           |
+| element metadata       | `element.{tag,id,role,text,dataset}`          | `element...`                                                    | -                                             | Không lưu (cần thay đổi schema)         |
+| ingest metadata        | -                                             | `_ingest.{receivedAt,sourceIp,userAgent,method,path,requestId,apiId,stage,traceId}` | -                                             | Không lưu; chỉ có khi ETL               |
+
+Mẫu gọi (mỗi yêu cầu một sự kiện):
+
+```ts
+await fetch("https://<api-id>.execute-api.ap-southeast-1.amazonaws.com/clickstream", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(eventPayload),
+  keepalive: true,
+});
 ```
 
-Payload có thể được mở rộng dần khi yêu cầu phân tích phát triển.
+ETL ánh xạ `eventId -> event_id` (PK với ON CONFLICT DO NOTHING), suy ra `event_timestamp` từ `_ingest.receivedAt` > payload > S3 LastModified, và chèn vào `clickstream_dw.public.clickstream_events`.
 
 ---
 
-### Luồng API Gateway và Lambda Ingest
-
-#### API Gateway HTTP API
-
-Endpoint ingest được expose bằng **Amazon API Gateway (HTTP API)** với route ví dụ:
-
-- Method: `POST`  
-- Path: `/clickstream`  
-
-Các đặc điểm chính:
-
-- Endpoint chấp nhận payload JSON từ trình duyệt.  
-- CORS được cấu hình để cho phép domain frontend (CloudFront / Amplify) gọi đến.  
-- Route được tích hợp với **Lambda function** (Lambda proxy integration).
-
-**Hình 5-5: API Gateway route cho POST /clickstream**
-
-Ảnh chụp màn hình cho thấy cấu hình HTTP API (`clickstream-http-api`) cho endpoint ingest clickstream.  
-Resource `/clickstream` expose một route `POST` duy nhất, được tích hợp với Lambda `clickstream-lambda-ingest`.  
-Trong workshop này không cấu hình authorizer để nội dung tập trung vào ingest dữ liệu thay vì xác thực.
-
-![Hình 5-5: API Gateway route cho POST /clickstream](/images/5-3-apigw-clickstream-route.png)
-
-
-#### Lambda Ingest function
-
-**Lambda Ingest** chịu trách nhiệm cho các việc sau:
-
-1. **Parse request**  
-   - Đọc body từ event mà API Gateway gửi vào.  
-   - Kiểm tra body có chứa một JSON object hoặc mảng các object hợp lệ hay không.
-
-2. **Validate & enrich cơ bản**  
-   - Đảm bảo các trường bắt buộc (ví dụ: `event_name`, `event_timestamp`) tồn tại.  
-   - Nếu timestamp phía client bị thiếu, gắn thêm timestamp phía server.  
-   - Thêm các metadata như:
-     - API Gateway request ID.  
-     - Source IP hoặc user agent (nếu cần).  
-
-3. **Gộp batch và ghi vào S3**  
-   - Tạo key trong Raw Clickstream bucket (`clickstream-s3-ingest`) theo pattern phân vùng theo thời gian, ví dụ:
-
-     ```text
-     s3://clickstream-s3-ingest/events/YYYY/MM/DD/event-<uuid>.json
-     ```
-
-   - Ghi các event nhận được dưới dạng JSON array hoặc NDJSON (newline-delimited JSON), tuỳ theo format được chọn.
-
-4. **Logging và xử lý lỗi**  
-   - Ghi log các lỗi validate hoặc event sai format vào **CloudWatch Logs**.  
-   - Trả về status code HTTP phù hợp cho API Gateway (ví dụ: `200` khi thành công, `400` khi payload không hợp lệ).
-
-Ví dụ S3 object key cho một batch event được ghi nhận ngày 04/12/2025:
-
-```text
-events/2025/12/04/event-a1b2c3d4.json
-```
-
-**Hình 5-6: Tổng quan Lambda Ingest**
-
-Ảnh chụp màn hình hiển thị function `clickstream-lambda-ingest` trong AWS Lambda console.  
-Sơ đồ minh hoạ việc function được trigger bởi HTTP API Gateway và sử dụng cấu hình nhẹ (128 MB memory, timeout ngắn) – đủ để validate payload JSON, enrich metadata và ghi các batch event vào S3 Raw Clickstream bucket.
-
-![Hình 5-6: Lambda Ingest function overview](/images/5-3-lambda-ingest-config.png)
-
----
-
-### Kiểm thử thủ công từ frontend và Postman
-
-Để xác nhận pipeline ingest hoạt động như mong đợi, ta thực hiện hai kiểu kiểm thử bổ sung.
-
-#### Kiểm thử end-to-end từ frontend thật
-
-1. Mở domain của Amplify app cho ứng dụng thương mại điện tử:
-
-   ```text
-   https://main.d2q6im0b1720uc.amplifyapp.com/
-   ```
-
-2. Đăng nhập qua **Amazon Cognito** bằng một tài khoản test.  
-3. Thực hiện một chuỗi hành động, chẳng hạn:
-
-   - Mở trang chủ và một trang danh mục.  
-   - Xem chi tiết hai hoặc ba sản phẩm.  
-   - Thêm ít nhất một sản phẩm vào giỏ hàng rồi xoá ra.  
-   - Bắt đầu flow checkout và đi tới bước xác nhận cuối cùng (việc đặt đơn hàng thật là tuỳ chọn).
-
-4. Dùng Developer Tools của trình duyệt (tab Network) để kiểm tra:
-
-   - Các request đang được gửi tới `POST /clickstream`.  
-   - Request body chứa các trường JSON mong đợi như `event_name`, `product_id`, `session_id`, v.v.  
-   - Status code trả về từ API Gateway là `200`.
-
-#### Kiểm thử trực tiếp bằng Postman hoặc Thunder Client
-
-Để kiểm thử có kiểm soát, bạn cũng có thể gửi các event synthetic bằng API client:
-
-- Method: `POST`  
-- URL:  
-
-  ```text
-  https://<api-id>.execute-api.<region>.amazonaws.com/clickstream
-  ```
-
-- Header:
-
-  ```text
-  Content-Type: application/json
-  ```
-
-- Body:
-
-  ```json
-  {
-    "event_name": "page_view",
-    "event_timestamp": "2025-12-04T16:00:00.000Z",
-    "user_id": "test_user_manual",
-    "login_state": "anonymous",
-    "session_id": "session_manual_001",
-    "client_id": "postman_client",
-    "page_url": "/manual-test"
-  }
-  ```
-
-Cách làm này hữu ích để kiểm thử xử lý lỗi, các rule validate, hoặc các edge case mà không phụ thuộc vào code frontend.
-
----
-
-### Kiểm tra dữ liệu trong S3 Raw Clickstream bucket
-
-Sau khi đã gửi event, bước tiếp theo là xác minh chúng đã được lưu thành công vào S3.
-
-1. Mở **Amazon S3 Console** và chọn Raw Clickstream bucket, ví dụ:
-
-   ```text
-   clickstream-raw-<account>-<region>
-   ```
-
-2. Điều hướng theo cấu trúc prefix:
-
-   ```text
-   events/YYYY/MM/DD/HH/
-   ```
-
-   Ví dụ:
-
-   ```text
-   events/2025/12/04/15/
-   ```
-
-3. Xác nhận rằng đã có một hoặc nhiều object với tên tương tự:
-
-   ```text
-   events-a1b2c3d4.json
-   events-f9e8d7c6.json
-   ```
-
-   được tạo ra.
-
-4. Tải một trong các file này về và mở bằng text editor (VS Code, Notepad++, v.v.):
-
-   - Kiểm tra JSON có hợp lệ hay không.  
-   - Kiểm tra các trường như `event_name`, `event_timestamp`, `user_id`, `session_id`, `product_id`, v.v. có khớp với các thao tác bạn đã thực hiện trên website hay không.  
-   - Đảm bảo nhiều event được nhóm lại hợp lý (ví dụ: một mảng các JSON object).
-
-5. Ghi chú lại:
-
-   - Kích thước file xấp xỉ (KB/MB).  
-   - Số lượng event trong mỗi file.  
-   - Tần suất xuất hiện file mới (tuỳ thuộc vào cách Lambda Ingest batch và ghi).
-
-Những quan sát này sẽ hữu ích khi tinh chỉnh kích thước batch ETL và lịch chạy ở các phần sau.
-
-**Hình 5-7: Các object JSON clickstream thô trong S3 bucket**
-
-Ảnh chụp màn hình hiển thị Raw Clickstream bucket tại prefix sâu nhất theo giờ.  
-Nhiều object JSON được tạo bởi Lambda Ingest, mỗi object đại diện cho một batch các sự kiện clickstream trong giờ đó.  
-Tên file sử dụng pattern dựa trên UUID (ví dụ: `event-a8bdf0c0-...json`), và cột `Size` cho biết nhanh số lượng event tương đối trong mỗi file.
-
-![Hình 5-7: Raw clickstream JSON objects in the S3 bucket](/images/5-3-s3-raw-objects.png)
-
----
-
-### Tổng kết và mối liên hệ với các thành phần downstream
-
-Kết thúc phần này, bạn nên đã có:
-
-- Một đường ingest hoạt động từ **browser → API Gateway → Lambda Ingest → S3 Raw bucket**.  
-- Xác minh rằng event có cấu trúc đúng và chứa đủ metadata cần thiết.  
-- Xác nhận Raw Clickstream bucket đang sử dụng **layout phân vùng theo thời gian**, phù hợp cho xử lý theo lô.
-
-Trong phần tiếp theo (5.4), trọng tâm sẽ chuyển sang **lớp phân tích riêng tư (private analytics layer)**, nơi một **ETL Lambda chạy trong VPC** đọc các file JSON thô này qua **S3 Gateway VPC Endpoint**, transform chúng và nạp vào **PostgreSQL Data Warehouse**.
-
----
-
-**Hình 5-8: Luồng ingest từ trình duyệt tới S3 Raw bucket**
-
-Sơ đồ minh hoạ chuỗi:
-
-- Trình duyệt (user actions) → **CloudFront** → **Amplify** (ứng dụng Next.js).  
-- Tracking ở frontend gửi các request HTTP tới **Amazon API Gateway (HTTP API)** trên route `POST /clickstream`.  
-- API Gateway gọi **Lambda Ingest**, function này validate và enrich event.  
-- Lambda Ingest ghi **các object JSON dạng batch** vào **S3 Raw Clickstream bucket** theo key phân vùng thời gian, chẳng hạn `events/YYYY/MM/DD/HH/events-<uuid>.json`.
-
-![Hình 5-8: Ingestion flow from frontend to S3 Raw bucket](/images/5-3-ingestion-flow.png)
+## 5.3.6 Kiểm thử & xác nhận
+
+Để kiểm tra thu nhận:
+
+1. Dùng UI của app Amplify:
+   - Duyệt vài trang sản phẩm  
+   - Thêm sản phẩm vào giỏ  
+2. Kiểm tra bucket S3 `clickstream-s3-ingest`:
+   - Điều hướng tới `events/YYYY/MM/DD/HH/`  
+   - Xác nhận xuất hiện các tệp mới `event-<uuid>.json`.  
+3. Mở một tệp JSON:
+   - Kiểm tra metadata `_ingest` và ngữ cảnh sản phẩm có mặt.  
+4. Xem log:
+   - API Gateway access logs  
+   - Lambda function logs  

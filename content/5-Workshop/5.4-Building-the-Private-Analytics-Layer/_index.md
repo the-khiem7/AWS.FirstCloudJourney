@@ -1,456 +1,140 @@
 ---
 title: "Building the Private Analytics Layer"
-weight: 4
+weight: 54
 chapter: false
 pre: " <b> 5.4. </b> "
 ---
 
-This section explains in detail how the **private analytics layer** is implemented so that batch ETL can run **entirely inside private subnets**, without exposing internal components to the public Internet.
+## 5.4.1 VPC, Subnets, and Route Tables
 
-The private analytics layer consists of:
+- **VPC CIDR**: `10.0.0.0/16`  
+- **Public subnet**: `10.0.0.0/20` → `SBW_Project-subnet-public1-ap-southeast-1a`  
+  - Hosts `SBW_EC2_WebDB` (OLTP EC2).  
+- **Private subnet**: `10.0.128.0/20` → `SBW_Project-subnet-private1-ap-southeast-1a`  
+  - Hosts `SBW_EC2_ShinyDWH` and `SBW_Lamda_ETL`.  
 
-- A **VPC-enabled ETL Lambda function** running in a **private subnet**.  
-- An **S3 Gateway VPC Endpoint** that allows the ETL Lambda to access S3 over the **AWS private network**.  
-- A **PostgreSQL Data Warehouse** running on an **EC2 instance** in a separate private subnet.  
+**Public Route Table**
 
-Together, these components form the backbone of the batch-processing pipeline:
+- `10.0.0.0/16 → local`  
+- `0.0.0.0/0 → Internet Gateway`  
 
-> S3 Raw Clickstream bucket → ETL Lambda (in VPC) → PostgreSQL Data Warehouse (EC2, private subnet)
+**Private Route Table**
 
----
-
-### Networking design for the analytics layer
-
-The VPC is logically divided into subnets with distinct roles:
-
-- **Public Subnet – OLTP (10.0.0.0/20)**  
-  - Hosts the OLTP PostgreSQL EC2 instance (`SBW_EC2_WebDB`).  
-  - Has a route `0.0.0.0/0 → Internet Gateway (IGW)` for inbound/outbound Internet access.  
-
-- **Private Subnet – Analytics & ETL (10.0.128.0/20)**  
-  - Hosts the **Data Warehouse EC2** instance (`SBW_EC2_ShinyDWH`) and the **R Shiny Server**.  
-  - Hosts the **VPC-enabled ETL Lambda** (`SBW_Lamda_ETL`) and the **S3 Gateway VPC Endpoint**.  
-  - Has **no route to the Internet Gateway** and **no NAT Gateway**.  
-  - Only local VPC routes plus S3 Gateway Endpoint for private S3 access.
-
-This design ensures that:
-
-- The Data Warehouse and R Shiny are **not directly reachable from the public Internet**.  
-- The ETL Lambda can access S3 and the Data Warehouse **only over private AWS networking**.  
-- There is **no NAT Gateway**, which reduces cost and simplifies the network footprint.
+- `10.0.0.0/16 → local`  
+- S3 prefix list → Gateway VPC Endpoint for S3  
+- No `0.0.0.0/0` to IGW or NAT Gateway  
 
 ---
 
-### Creating and configuring VPC Endpoints for private connectivity
+## 5.4.2 VPC Endpoints (S3 & SSM)
 
-To enable the private analytics layer to function without NAT Gateway or Internet Gateway access, we deploy two types of VPC Endpoints:
+![VPC Endpoint for S3 & SSM](/images/aws-vpc-endpoints-s3-ssm.png)
 
-1. **S3 Gateway VPC Endpoint** – allows Lambda ETL and Data Warehouse EC2 to access S3 without public IP
-2. **SSM Interface VPC Endpoints** (3 endpoints) – enables secure admin access via AWS Systems Manager Session Manager to the private EC2 instance
+### S3 Gateway VPC Endpoint
 
-#### S3 Gateway VPC Endpoint
+- Allows **private S3 access** for:
+  - `SBW_Lamda_ETL`  
+- Eliminates the need for a NAT Gateway.
 
-The S3 Gateway VPC Endpoint allows resources in the private subnet to reach S3 **without using public IPs**.
+### SSM Interface Endpoints
 
-**Figure 5-9: S3 Gateway VPC Endpoint attached to private route table**
+- `com.amazonaws.ap-southeast-1.ssm`  
+- `com.amazonaws.ap-southeast-1.ssmmessages`  
+- `com.amazonaws.ap-southeast-1.ec2messages`  
 
-The screenshot shows the Gateway VPC Endpoint for the Amazon S3 service (`com.amazonaws.ap-southeast-1.s3`) in the workshop VPC.  
-The endpoint is in the `Available` state and is associated with the private route table for the Analytics & ETL subnet (10.0.128.0/20).  
-This configuration ensures that traffic from both the ETL Lambda (`SBW_Lamda_ETL`) and the Data Warehouse EC2 instance (`SBW_EC2_ShinyDWH` running PostgreSQL DWH + R Shiny Server) to S3 stays inside the AWS network and does not require a NAT Gateway.
-
-![Figure 5-9: Gateway VPC Endpoint attached to private route tables](/images/5-4-s3-gateway-vpce.png)
-
-#### Step 1 – Create the Gateway Endpoint
-
-1. Open the **VPC Console** in the AWS Management Console.  
-2. Navigate to **Endpoints** → click **Create endpoint**.  
-3. Under **Service category**, select **AWS services**.  
-4. In the search box, type `s3` and select the entry:
-
-   ```text
-   com.amazonaws.<region>.s3
-   ```
-
-5. For **Endpoint type**, select **Gateway**.  
-6. For **VPC**, choose the project VPC (`SBW_Project-vpc`) that contains the private Analytics & ETL subnet.  
-7. Under **Route tables**, select the route table associated with the **private subnet (10.0.128.0/20)** – this single subnet hosts both the Data Warehouse EC2 (`SBW_EC2_ShinyDWH` with PostgreSQL DWH + R Shiny Server) and the ETL Lambda (`SBW_Lamda_ETL`).  
-8. In the **Policy** section, you can start with **Full access** for the workshop:
-
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Effect": "Allow",
-         "Principal": "*",
-         "Action": "s3:*",
-         "Resource": "*"
-       }
-     ]
-   }
-   ```
-
-   Later, this can be restricted to a specific bucket or prefix.
-
-9. Click **Create endpoint**.
-
-#### Step 2 – Verify route table entries
-
-After the endpoint is created, AWS automatically adds routes to the selected route tables.
-
-1. In the **VPC Console**, open **Route tables**.  
-2. Select the route table used by the **private subnet (10.0.128.0/20)**.  
-3. On the **Routes** tab, verify that:
-
-   - There is a local route:
-
-     ```text
-     10.0.0.0/16 → local
-     ```
-
-   - There is a prefix-list route to S3​, pointing to the new endpoint:
-
-     ```text
-     pl-xxxxxxxx → vpce-xxxxxxxx  (Gateway Endpoint to S3)
-     ```
-
-   - There is **no** route:
-
-     ```text
-     0.0.0.0/0 → igw-xxxxxxx
-     ```
-
-   - There is **no** NAT Gateway target.
-
-This confirms that the private subnet does **not** send traffic directly to the Internet, but **can reach S3** through the Gateway Endpoint.
-
-#### Creating SSM Interface VPC Endpoints
-
-To enable secure admin access to the private EC2 instance (`SBW_EC2_ShinyDWH` running PostgreSQL DWH + R Shiny Server) without SSH or bastion host, create **three Interface VPC Endpoints** for AWS Systems Manager:
-
-1. In **VPC Console**, navigate to **Endpoints** → **Create endpoint**.
-2. Create each of the following endpoints:
-
-   - **Endpoint 1**: `com.amazonaws.ap-southeast-1.ssm`
-   - **Endpoint 2**: `com.amazonaws.ap-southeast-1.ssmmessages`
-   - **Endpoint 3**: `com.amazonaws.ap-southeast-1.ec2messages`
-
-3. For each endpoint:
-   - **Service category**: AWS services
-   - **Endpoint type**: Interface
-   - **VPC**: Select `SBW_Project-vpc`
-   - **Subnets**: Select the private subnet (10.0.128.0/20)
-   - **Security group**: Create or select `sg_ec2_VPC_Interface_endpoint_SSM` with:
-     - Inbound: `443/tcp` from `sg_analytics_ShinyDWH` (the DWH EC2 security group)
-     - Outbound: All traffic allowed
-   - **Enable DNS name**: Check this option
-
-4. Click **Create endpoint** for each.
-
-These three Interface Endpoints ensure that:
-- The EC2 instance can connect to Systems Manager services over HTTPS (port 443)
-- All Session Manager traffic stays on the AWS private network
-- No NAT Gateway or Internet Gateway is required for admin access
-
-> **Important**: Both S3 Gateway Endpoint and SSM Interface Endpoints (3 endpoints) are required for the private analytics layer to function. The S3 Gateway enables data access, while SSM Interface Endpoints enable secure admin access.
+These endpoints enable **Session Manager** to manage and port-forward into `SBW_EC2_ShinyDWH` without any public IP or SSH port.
 
 ---
 
-### Configuring the ETL Lambda inside the VPC
+## 5.4.3 Data Warehouse on EC2 – `SBW_EC2_ShinyDWH`
 
-The ETL Lambda function must be placed inside the VPC so it can:
+On the private EC2 instance:
 
-- Reach S3 via the **Gateway Endpoint**.  
-- Connect to the **PostgreSQL Data Warehouse + R Shiny Server** on the EC2 instance in the private subnet.
+- PostgreSQL DB: `clickstream_dw`  
+- Main table: `clickstream_events` with fields:
 
-#### Step 1 – Attach the Lambda to the VPC
-
-1. Open the **Lambda Console** and choose the ETL function, for example:
-
-   ```text
-   clickstream-etl-lambda
-   ```
-
-2. Go to the **Configuration** tab → **Network** (or **Environment → VPC** depending on the UI).  
-3. Click **Edit** and set:
-
-   - **VPC**: your project VPC.  
-   - **Subnets**: select the **ETL private subnet (10.0.3.0/24)** (you can select multiple subnets in the same AZ or different AZs for resilience).  
-   - **Security groups**: choose a security group that:
-     - Allows outbound traffic to S3 (via the Gateway Endpoint).  
-     - Allows outbound traffic to the Data Warehouse EC2 instance (port 5432).
-
-4. Save the configuration. Lambda will now create ENIs (elastic network interfaces) in the selected subnet(s) the next time it runs.
-
-#### Step 2 – IAM role permissions for ETL Lambda
-
-The ETL Lambda **execution role** must include:
-
-- Permission to **read from** the Raw Clickstream S3 bucket (`clickstream-s3-ingest`), e.g.:
-
-  ```json
-  {
-    "Effect": "Allow",
-    "Action": [
-      "s3:GetObject",
-      "s3:ListBucket"
-    ],
-    "Resource": [
-      "arn:aws:s3:::clickstream-s3-ingest",
-      "arn:aws:s3:::clickstream-s3-ingest/events/*"
-    ]
-  }
-  ```
-
-- Permission to **write logs** to CloudWatch Logs (usually added by default).  
-- No direct permission to manage infrastructure (keep the role minimal).
-
-#### Step 3 – Database connectivity configuration
-
-In the ETL Lambda environment variables, store:
-
-- `DWH_HOST` – the private IP or hostname of the Data Warehouse EC2 instance (`SBW_EC2_ShinyDWH`).  
-- `DWH_PORT` – typically `5432`.  
-- `DWH_USER` / `DWH_PASSWORD` – credentials with sufficient privileges to insert into DWH tables.  
-- `DWH_DATABASE` – the name of the analytics database (`clickstream_dw`).  
-- `RAW_BUCKET` – the S3 bucket name for raw clickstream data (`clickstream-s3-ingest`).  
-- `AWS_REGION` – the AWS region (`ap-southeast-1`).
-
-The Lambda code will use these environment variables to establish a connection (for example, using a PostgreSQL client library).
-
----
-
-### Implementing the ETL logic
-
-The ETL Lambda performs the following high-level steps each time it runs (either on a schedule via EventBridge or triggered manually):
-
-1. **Determine the time window / S3 prefix to process**  
-   - For example, all objects under `events/YYYY/MM/DD/` for the current day.
-
-2. **List relevant S3 objects**  
-   - Use `ListObjectsV2` on the Raw Clickstream bucket with the chosen prefix.
-
-3. **Read and parse events**  
-   - For each object, call `GetObject` and parse the JSON content.  
-   - Validate important fields (event name, timestamp, user/session IDs, product IDs).
-
-4. **Transform to analytical schema**  
-   - Map raw JSON to the main fact table `clickstream_events` with columns:
-     - `event_id`, `event_timestamp`, `event_name`  
-     - `user_id`, `user_login_state`, `identity_source`  
-     - `client_id`, `session_id`, `is_first_visit`  
-     - `context_product_id`, `context_product_name`, `context_product_category`, `context_product_brand`  
-     - `context_product_price`, `context_product_discount_price`, `context_product_url_path`  
-     - `fact_events` – individual events with foreign keys to users and products.  
-     - `fact_sessions` – aggregated session-level metrics.
-
-   - Apply simple business rules, such as:
-     - Derive a **date** and **hour** dimension from timestamps.  
-     - Normalize event names.  
-     - Filter out test or malformed events.
-
-5. **Insert into the Data Warehouse**
-
-   - Open a transaction against the PostgreSQL Data Warehouse.  
-   - Use batched `INSERT` statements or `COPY`-like bulk inserts (depending on the implementation).  
-   - Commit if everything is successful; roll back on errors.
-
-6. **Mark progress (optional)**  
-   - Store a processing marker (e.g., last processed hour) in a control table or a metadata S3 prefix to avoid re-processing.
-
-Example of the main fact table for events:
-
-```sql
-CREATE TABLE IF NOT EXISTS clickstream_events (
-    event_id                        TEXT PRIMARY KEY,
-    event_timestamp                 TIMESTAMPTZ NOT NULL,
-    event_name                      TEXT NOT NULL,
-    user_id                         TEXT,
-    user_login_state               TEXT,
-    identity_source                TEXT,
-    client_id                      TEXT,
-    session_id                     TEXT,
-    is_first_visit                 BOOLEAN,
-    context_product_id             TEXT,
-    context_product_name           TEXT,
-    context_product_category       TEXT,
-    context_product_brand          TEXT,
-    context_product_price          NUMERIC,
-    context_product_discount_price NUMERIC,
-    context_product_url_path       TEXT
-);
+```text
+event_id
+event_timestamp
+event_name
+user_id
+user_login_state
+identity_source
+client_id
+session_id
+is_first_visit
+context_product_id
+context_product_name
+context_product_category
+context_product_brand
+context_product_price
+context_product_discount_price
+context_product_url_path
 ```
 
-The ETL Lambda (`SBW_Lamda_ETL`) will insert data into `clickstream_events` based on the parsed S3 JSON files from `clickstream-s3-ingest`.
 
-**Figure 5-10: VPC configuration of the ETL Lambda function**
+The instance:
 
-The screenshot shows the `SBW_Lamda_ETL` function attached to the VPC.  
-The Lambda uses the private subnet and a dedicated security group (`sg_Lambda_ETL`) that controls all network access.  
-This configuration allows the function to reach the S3 Gateway VPC Endpoint and the Data Warehouse instance without exposing the Lambda to the public internet.
-
-![Figure 5-10: VPC configuration of the ETL Lambda function](/images/5-4-lambda-etl-vpc.png)
+- `SBW_Lamda_ETL` conect postgreSQL DB: `clickstream_dw`  
+- Localhost web Shiny through SSM
 
 ---
 
-### Security groups and connectivity
+## 5.4.4 ETL Lambda – `SBW_Lamda_ETL` (Private subnet-Enabled)
 
-To ensure that only the necessary traffic is allowed:
+ETL Lambda is where batch processing happens.
 
-- **Security Group for the Data Warehouse EC2 (sg_analytics_ShinyDWH)**
+**VPC configuration:**
 
-  - Inbound rules:
-    - Allow `5432/tcp` **from the ETL Lambda security group (`sg_Lambda_ETL`)** (not from `0.0.0.0/0`).  
-  - Outbound rules:
-    - Allow all outbound traffic (or restrict as needed for updates/monitoring).
+- Subnet: `SBW_Project-subnet-private1-ap-southeast-1a`  
+- SG: `sg_Lambda_ETL`  
 
-- **Security Group for the ETL Lambda (sg_Lambda_ETL)**
+**Environment variables:**
 
-  - Inbound rules:
-    - Not needed (Lambda does not accept inbound connections).  
-  - Outbound rules:
-    - Allow traffic to:
-      - The Data Warehouse EC2 private IP on port `5432`.  
-      - The S3 Gateway VPC Endpoint (this is usually covered by allowing all outbound traffic within the VPC).
+- `DWH_HOST`, `DWH_PORT=5432`, `DWH_USER`, `DWH_PASSWORD`, `DWH_DATABASE=clickstream_dw`  
+- `RAW_BUCKET=clickstream-s3-ingest`  
+- `AWS_REGION=ap-southeast-1`  
 
-This setup ensures that:
+**Task:**
 
-- Only the ETL Lambda can talk to the Data Warehouse (no direct access from the public Internet).  
-- The Data Warehouse EC2 (`SBW_EC2_ShinyDWH`) does not accept arbitrary incoming connections.
+1. Identify files in `s3://clickstream-s3-ingest/events/YYYY/MM/DD/` for the target batch window.  
+2. For each JSON file:
+   - Extra
+   - Transform 
+   - Load 
 
----
+**IAM role:**
 
-### Admin access via AWS Systems Manager Session Manager
-
-The Data Warehouse EC2 instance is in a **private subnet with no public IP**. Traditional SSH access would require either:
-
-- A bastion host (jump server) in a public subnet, or  
-- A VPN connection into the VPC.
-
-Instead, this architecture uses **AWS Systems Manager Session Manager**, which provides secure, browser-based shell access **without opening SSH ports** or deploying bastion hosts.
-
-#### How Session Manager works
-
-1. The EC2 instance runs the **SSM Agent** (pre-installed on Amazon Linux 2 and other AWS-optimized AMIs).  
-2. The SSM Agent connects outbound to the Systems Manager service endpoints over **HTTPS (port 443)**.  
-3. An admin opens the **AWS Console** or uses the **AWS CLI** to start a Session Manager session.  
-4. The session is established through the SSM service—**no inbound SSH traffic** is required.
-
-#### SSM VPC Interface Endpoints (Already Created)
-
-> **Note**: The three SSM Interface VPC Endpoints (`ssm`, `ssmmessages`, `ec2messages`) were already created in the previous section "Creating SSM Interface VPC Endpoints" along with the S3 Gateway Endpoint. Both endpoint types are required for the private analytics layer to function properly.
-
-With the SSM Interface Endpoints deployed:
-
-- The EC2 instance (`SBW_EC2_ShinyDWH` running PostgreSQL DWH + R Shiny Server) connects to Systems Manager services over HTTPS (port 443) via the Interface Endpoints
-- All management traffic stays on the **AWS private network** within the private subnet (10.0.128.0/20)
-- No NAT Gateway or Internet Gateway route is required for admin access
-
-#### Connecting to the Data Warehouse EC2
-
-**Option A: AWS Console (browser-based shell)**
-
-1. Open the **EC2 Console**.  
-2. Select the Data Warehouse instance (`SBW_EC2_ShinyDWH`).  
-3. Click **Connect** → choose the **Session Manager** tab.  
-4. Click **Connect** to open a browser-based shell.
-
-**Option B: AWS CLI**
-
-```bash
-aws ssm start-session --target <instance-id>
-```
-
-Once connected, you can:
-
-- Run `psql` to query the PostgreSQL Data Warehouse.  
-- Check logs for both PostgreSQL and Shiny Server.
-- Restart services or perform maintenance tasks on the EC2 instance.  
-- Use **port forwarding** to access the R Shiny Server UI (port 3838) from your local machine:
-
-  ```bash
-  aws ssm start-session \
-    --target <instance-id> \
-    --document-name AWS-StartPortForwardingSession \
-    --parameters '{"portNumber":["3838"],"localPortNumber":["3838"]}'
-  ```
-
-  Then open `http://localhost:3838/sbw_dashboard` in your browser to view Shiny dashboards.
-
-#### Benefits of Session Manager
-
-- **No SSH keys or bastion hosts** – reduces attack surface and operational overhead.  
-- **Audit and logging** – all session activity is logged to CloudWatch Logs or S3 (if configured).  
-- **Fine-grained IAM control** – use IAM policies to control who can start sessions on which instances.  
-- **Private connectivity** – with VPC Interface Endpoints, traffic never leaves the AWS network.
 
 ---
 
-### Testing the ETL pipeline from end to end
+## 5.4.5 EventBridge Scheduling – `SBW_ETL_HOURLY_RULE`
 
-To validate that the private analytics layer is working correctly:
+![EventBridge rule](/images/aws-eventbridge-sbw-etl-hourly-rule.png)
 
-1. **Generate fresh events**  
-   - Follow Section 5.3 to generate new clickstream events (page views, product views, add-to-cart, checkout).
+EventBridge drives the **batch nature** of the platform:
 
-2. **Trigger the ETL Lambda**
+- **Rule name**: `SBW_ETL_HOURLY_RULE`  
+- **Schedule**: `rate(1 hour)`  
+- **Target**: `SBW_Lamda_ETL`  
 
-   - Option A: Wait for the scheduled **EventBridge rule** (e.g., every 30 minutes).  
-   - Option B: In the EventBridge console, select the ETL rule (for example `clickstream-etl-schedule`) and choose **Run now**.  
-   - Option C: In the Lambda console, use the **Test** button with a minimal test event to manually invoke the ETL.
+Whenever the rule triggers:
 
-3. **Check CloudWatch Logs**
+1. ETL Lambda runs inside the private subnet.  
+2. Reads new raw events from S3 via the Gateway Endpoint.  
+3. Loads processed data into `clickstream_dw`.  
 
-   - Open the ETL Lambda log group in **CloudWatch Logs**.  
-   - Verify that:
-     - The Lambda successfully listed and read S3 objects.  
-     - It processed the expected number of events.  
-     - It connected to the Data Warehouse and executed inserts without errors.
-
-4. **Verify data in the Data Warehouse**
-
-   - Connect to the Data Warehouse EC2 instance using **AWS Systems Manager Session Manager** (no SSH required).  
-   - From the Session Manager shell, use `psql` or a SQL client to run queries such as:
-
-     ```sql
-     SELECT event_name, COUNT(*) AS total_events
-     FROM fact_events
-     GROUP BY event_name
-     ORDER BY total_events DESC;
-     ```
-
-     ```sql
-     SELECT product_id, COUNT(*) AS view_count
-     FROM fact_events
-     WHERE event_name = 'product_view'
-     GROUP BY product_id
-     ORDER BY view_count DESC
-     LIMIT 10;
-     ```
-
-   - Confirm that the counts and top products roughly match the behaviour you generated on the website.
+We can also trigger the ETL Lambda **manually** (from the Lambda console) for ad-hoc backfills or testing.
 
 ---
 
-### Summary
+## 5.4.6 Security Groups & Connectivity Summary
 
-By the end of this section, you will have:
+- `sg_Lambda_ETL`:
+  - Outbound to S3 endpoint and `sg_analytics_ShinyDWH:5432`.  
 
-- Configured an **S3 Gateway VPC Endpoint** so that private subnets can access S3 without a NAT Gateway.  
-- Attached the **ETL Lambda** to the VPC and ensured it can reach both S3 and the Data Warehouse over private networking.  
-- Implemented ETL logic that reads raw JSON clickstream files, transforms them, and loads them into a **PostgreSQL Data Warehouse** in a private subnet.  
-- Verified end-to-end connectivity and data flow by inspecting logs and running SQL queries.
+- `sg_analytics_ShinyDWH`:
+  - Inbound `5432/tcp` from `sg_Lambda_ETL`.  
+  - Inbound `3838/tcp` for Shiny (accessible only via SSM port forwarding).  
 
-In the next section (5.5), you will use **R Shiny dashboards** running on the Data Warehouse EC2 instance to visualize the processed data and build interactive analytics views.
 
----
-
-**Figure 5-11: Private analytics layer with ETL Lambda, Data Warehouse, and S3 Gateway Endpoint**
-
-The diagram shows how the batch ETL pipeline runs entirely inside the Analytics private subnet:
-
-- **EventBridge** (bottom right) triggers the **ETL Lambda** on a schedule.  
-- The ETL Lambda reads raw clickstream files from the **S3 Raw Clickstream bucket** and reaches S3 through the **S3 Gateway VPC Endpoint** (no Internet/NAT required).  
-- The ETL Lambda writes transformed data into the **PostgreSQL Data Warehouse EC2 instance**, and the **R Shiny Server** running on the same instance reads from the Data Warehouse to power analytics dashboards.
-
-![Figure 5-11: Private analytics layer with ETL Lambda, Data Warehouse, and S3 Gateway Endpoint](/images/5-4-etl-s3-endpoint.png)
