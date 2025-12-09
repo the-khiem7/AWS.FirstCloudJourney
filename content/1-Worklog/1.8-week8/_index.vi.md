@@ -1,22 +1,28 @@
 ---
-title : "Worklog Tuần 8"
-
+title : "Week 8 Worklog"
 weight : 8
 chapter : false
 pre : " <b> 1.8. </b> "
 ---
-**Session Manager** là một chức năng nằm trong dịch vụ System Manager của AWS, Session Manager cung cấp khả năng quản lý các máy chủ một cách an toàn mà **không cần mở port SSH, không cần Bastion Host hoặc quản lý SSH key**. 
-Session Manager cũng giúp dễ dàng tuân thủ các chính sách của công ty yêu cầu quyền truy cập có kiểm soát, đảm bảo việc bảo mật nghiêm ngặt và ghi log truy việc truy cập trong khi vẫn cung cấp cho người dùng cuối quyền truy cập đa nền tảng.
+## Week 8 Objectives:
+- Gặp mặt team trực tiếp để thống nhất định hướng và quy trình làm việc.  
+- Chuẩn hóa proposal, tài liệu và quy trình trước khi vào giai đoạn build thật.  
+- Triển khai GitHub Pages, tạo môi trường làm việc chung.  
+- Nghiên cứu Cognito + S3 và kiến trúc web e-commerce.  
+- Đặt nền móng cho việc thiết kế database và Clickstream.
 
-Với việc sử dụng Session Manager, bạn sẽ có được những ưu điểm sau:
+---
+## Tasks to be carried out this week:
 
-- Không cần phải mở cổng 22 cho giao thức SSH.
-- Có thể cấu hình để kết nối không cần đi ra ngoài internet.
-- Không cần quản lý private key của server để kết nối SSH.
-- Quản lý tập trung được user bằng việc sử dụng AWS IAM.
-- Truy cập tới server một cách dễ dàng và đơn giản bằng một cú click chuột.
-- Thời gian truy cập nhanh chóng hơn các phương thức truyền thống như SSH.
-- Hỗ trợ nhiều hệ điều hành khác nhau như Linux, Windows, MacOS.
-- Log lại được các phiên kết nối và các câu lệnh đã thực thi trong lúc kết nối tới server.
+| Day | Task | Start Date | Completion Date | Reference Material |
+|-----|------|------------|-----------------|-------------------|
+| 1 | - Gặp mặt team (offline). <br> - Đẩy nội dung dự án lên GitHub/GitHub Pages. <br> - Soát lỗi proposal & chuẩn hóa nội dung. <br> - Chốt roadmap tuần 8→12. <br> - Phân công nghiên cứu Cognito & S3. | 28/10/2025 09:00 | 28/10/2025 12:00 | Internal meeting notes |
+| 2 | - Nghiên cứu Cognito & S3. <br> - Bắt đầu build web dựa trên template Git. <br> - Quyết định không dùng backend riêng. <br> - Tìm hiểu Clickstream (cơ chế, code, thuật toán). <br> - Xác định database phù hợp. <br> - Sửa lại architecture. <br> - Nghiên cứu ORM trong template frontend. | 29/10/2025 22:30 | 30/10/2025 00:30 | Internal meeting notes |
 
-Với những ưu điểm trên, bạn có thể sử dụng Session Manager thay vì sử dụng kỹ thuật Bastion host giúp chúng ta tiết kiệm được thời gian và chi phí khi quản lý server Bastion.
+---
+## Week 8 Achievements:
+- Team đã gặp mặt, thống nhất quy trình làm việc & mục tiêu tuần.  
+- GitHub Pages được khởi tạo & nội dung được chuẩn hóa.  
+- Bắt đầu build web e-commerce từ template có sẵn.  
+- Có định hướng rõ về Cognito + S3 + kiến trúc không backend riêng.  
+- Hiểu sơ bộ về Clickstream & đặt nền móng cho tracking.  
