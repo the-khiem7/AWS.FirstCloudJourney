@@ -1,22 +1,27 @@
 ---
-title : "Worklog Tuần 11"
-
+title : "Week 11 Worklog"
 weight : 11
 chapter : false
 pre : " <b> 1.11. </b> "
 ---
-**Session Manager** là một chức năng nằm trong dịch vụ System Manager của AWS, Session Manager cung cấp khả năng quản lý các máy chủ một cách an toàn mà **không cần mở port SSH, không cần Bastion Host hoặc quản lý SSH key**. 
-Session Manager cũng giúp dễ dàng tuân thủ các chính sách của công ty yêu cầu quyền truy cập có kiểm soát, đảm bảo việc bảo mật nghiêm ngặt và ghi log truy việc truy cập trong khi vẫn cung cấp cho người dùng cuối quyền truy cập đa nền tảng.
+## Week 11 Objectives:
+- Kiểm tra vận hành web e-commerce.  
+- Hoàn thiện template tài liệu.  
+- Tiếp tục áp dụng Docker + LocalStack vào dự án.  
+- Kiểm thử login và triển khai web lên Vercel.
 
-Với việc sử dụng Session Manager, bạn sẽ có được những ưu điểm sau:
+---
+## Tasks to be carried out this week:
 
-- Không cần phải mở cổng 22 cho giao thức SSH.
-- Có thể cấu hình để kết nối không cần đi ra ngoài internet.
-- Không cần quản lý private key của server để kết nối SSH.
-- Quản lý tập trung được user bằng việc sử dụng AWS IAM.
-- Truy cập tới server một cách dễ dàng và đơn giản bằng một cú click chuột.
-- Thời gian truy cập nhanh chóng hơn các phương thức truyền thống như SSH.
-- Hỗ trợ nhiều hệ điều hành khác nhau như Linux, Windows, MacOS.
-- Log lại được các phiên kết nối và các câu lệnh đã thực thi trong lúc kết nối tới server.
+| Day | Task | Start Date | Completion Date | Reference Material |
+|-----|------|------------|-----------------|-------------------|
+| 1 | - Kiểm tra template docx. <br> - Chạy và nghiên cứu dự án. <br> - Kiểm tra web bán hàng. <br> - Dùng LocalStack. <br> - Kích hoạt GitHub Student. <br> - Học Docker + LocalStack. | 21/11/2025 12:00 | 21/11/2025 14:00 | Meeting notes |
+| 2 | - Test chức năng web e-commerce. <br> - Clerk login không phù hợp → chuyển sang Cognito. <br> - Deploy web lên Vercel (lần 5 thành công). <br> - Fix next.config.ts, package.json, eslint, .env. <br> - Lưu userID vào DB bằng userpool. | 23/11/2025 23:00 | 24/11/2025 01:00 | Meeting notes |
 
-Với những ưu điểm trên, bạn có thể sử dụng Session Manager thay vì sử dụng kỹ thuật Bastion host giúp chúng ta tiết kiệm được thời gian và chi phí khi quản lý server Bastion.
+---
+## Week 11 Achievements:
+- Template hoàn chỉnh & hoạt động tốt.  
+- Web đã chạy ổn định trên local và deploy thành công lên Vercel.  
+- Authentication chuyển từ Clerk → Cognito.  
+- Nhiều lỗi NextJS đã được xử lý triệt để.  
+---
