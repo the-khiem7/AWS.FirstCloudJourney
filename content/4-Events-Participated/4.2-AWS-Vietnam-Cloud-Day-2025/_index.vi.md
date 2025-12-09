@@ -7,8 +7,6 @@ tags: ["AWS", "CloudDay", "Vietnam", "GenAI", "AI Agents", "Events"]
 pre : " <b> 4.2. </b> "
 ---
 
-# AWS Vietnam Cloud Day 2025
-
 **Địa điểm:** Bitexco Financial Tower  
 **Thời gian:** Thứ Năm, 18/09/2025  
 

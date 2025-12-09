@@ -1,16 +1,13 @@
 ---
-title : "Event 3"
+title : "AI/ML/GenAI on AWS"
 
-weight : 2
+weight : 3
 chapter : false
 pre : " <b> 4.3 </b> "
 ---
 
-# “AI/ML/GenAI on AWS”
-
 **Venue:** Bitexco Financial Tower  
 **Date:** Saturday, November 15, 2025  
-
 
 ## Event Objectives
 - Provide a practical introduction to AI/ML/GenAI capabilities on AWS with a focus on Amazon Bedrock
@@ -34,8 +31,9 @@ pre : " <b> 4.3 </b> "
 - **Ice-breaker activity:** Warm-up activity to align expectations and encourage interaction
 - **Speaker introduction:** Session led by Hoàng Kha, Hữu Nghị, and Hoàng Anh
 
+![Generative AI with Amazon Bedrock](img/generative-ai-with-amazon-bedrock.jpg)
 ### Generative AI with Amazon Bedrock
-- **Foundation Models (FM):** Claude, Llama, Titan — comparison and selection guide based on use case needs
+- **Foundation Models (FM):** Claude, Llama, Titan - comparison and selection guide based on use case needs
 - **Prompt Engineering:** Techniques for better responses, including structured prompting and few-shot learning
 - **Reasoning patterns:** Applying step-based reasoning approaches to improve consistency for complex tasks
 - **RAG (Retrieval-Augmented Generation):** Architecture overview and Knowledge Base integration to ground answers
@@ -43,26 +41,56 @@ pre : " <b> 4.3 </b> "
 - **Guardrails:** Safety controls, policy enforcement, and content filtering for responsible GenAI applications
 - **Live Demo:** Building a Generative AI chatbot using Amazon Bedrock (end-to-end walkthrough)
 
+- **Foundation Models (FM):** Claude, Llama, Titan - comparison and selection guidance by use case
+
+![Why Foundation Models](img/why-foundation-models.jpg)
+
+**Traditional ML models:** Labeled data + train + deploy a dedicated model for each task (text generation, summarization, information extraction, Q&A, chatbot).  
+**Foundation models:** Unlabeled data + pretrain FM + fine-tune/adapter for many tasks (text generation, summarization, information extraction, Q&A, chatbot).
+
+![Supported Foundation Models in Amazon Bedrock](img/supported-foundation-models-in-amazon-bedrock.jpg)
+
+![Prompting Techniques - Chain of Thought (CoT)](img/prompting-techniques-chain-of-thought-cot.jpg)
+
+![What is Retrieval Augmented Generation](img/what-is-retrieval-augmented-generation.jpg)
+
+- **RAG (Retrieval-Augmented Generation):** Architecture overview and Knowledge Base integration to ground answers
+
+![RAG Use Cases](img/rag-use-cases.jpg)
+
+![RAG in Action](img/rag-in-action.jpg)
+
+![Retrieve and Generate API](img/retrieve-and-generate-api.jpg)
+
+![Data Ingestion Workflow](img/data-ingestion-workflow.jpg)
+
+![Frameworks for Building Agents](img/frameworks-for-building-agents.jpg)
+
+![Amazon Bedrock AgentCore](img/amazon-bedrock-agentcore.jpg)
+
 ## Key Takeaways
 
 ### Design Mindset
 - **Use-case first:** Start from the problem (chatbot, Q&A, automation) then choose the right model and architecture
-- **Grounding matters:** For enterprise/knowledge-heavy use cases, accuracy depends on retrieval + context, not “bigger prompts”
+- **Grounding matters:** For enterprise/knowledge-heavy use cases, accuracy depends on retrieval + context, not "bigger prompts"
 - **Safety by default:** Responsible GenAI requires guardrails and policy controls from the beginning, not as an afterthought
 
 ### Technical Architecture
 - **Model selection:** Choose models based on cost, latency, quality, and alignment with task type (chat, reasoning, summarization)
 - **Prompt engineering:** Use structured prompts and examples (few-shot) to reduce ambiguity and stabilize outputs
-- **RAG workflow:** Retrieve relevant documents → inject context → generate answer → (optional) cite sources / log trace
+- **RAG workflow:** Retrieve relevant documents + inject context + generate answer + (optional) cite sources / log trace
 - **Agents & tools:** Agents enable multi-step execution with tools (APIs, search, data lookup) for real automation
 - **Guardrails controls:** Filter unsafe content, enforce policies, and reduce risk in production GenAI apps
 
 ### Applying to Work
 - **Prototype a Bedrock chatbot:** Start with a small scoped knowledge base (FAQs/docs) and measure answer quality
 - **Create a prompt library:** Standardize prompts/templates for common tasks (summarize, classify, extract, Q&A)
-- **Add RAG for reliability:** Move from “prompt-only” to RAG when accuracy and knowledge freshness matter
+- **Add RAG for reliability:** Move from "prompt-only" to RAG when accuracy and knowledge freshness matter
 - **Use agents selectively:** Apply Bedrock Agents when workflows require multiple steps and tool calls
 - **Implement guardrails:** Define policies, monitor outputs, and log prompts/responses for continuous improvement
 
 ## Event Experience
-Attending “AI/ML/GenAI on AWS” offered a hands-on view of how Amazon Bedrock can be used to build production-ready GenAI applications. The workshop structure made it easy to progress from fundamentals (model selection and prompting) to more advanced patterns like RAG, Agents, and Guardrails. The live demo helped connect the concepts into an end-to-end chatbot workflow that can be adapted to real internal knowledge use cases.
+Attending "AI/ML/GenAI on AWS" offered a hands-on view of how Amazon Bedrock can be used to build production-ready GenAI applications. The workshop structure made it easy to progress from fundamentals (model selection and prompting) to more advanced patterns like RAG, Agents, and Guardrails. The live demo helped connect the concepts into an end-to-end chatbot workflow that can be adapted to real internal knowledge use cases.
+
+![Resources](img/resources.jpg)
+![Group Selfie](img/GroupSelfie.jpg)

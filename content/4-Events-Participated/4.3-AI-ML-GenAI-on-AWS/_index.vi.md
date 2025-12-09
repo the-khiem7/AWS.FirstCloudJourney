@@ -1,12 +1,10 @@
 ---
-title : "Event 3"
+title : "AI/ML/GenAI on AWS"
 
-weight : 2
+weight : 3
 chapter : false
 pre : " <b> 4.3 </b> "
 ---
-
-# “AI/ML/GenAI on AWS”
 
 **Địa điểm:** Bitexco Financial Tower
 **Ngày:** Thứ Bảy, 15 tháng 11 năm 2025  
@@ -34,14 +32,39 @@ pre : " <b> 4.3 </b> "
 - **Hoạt động ice-breaker:** Hoạt động khởi động để thống nhất kỳ vọng và khuyến khích tương tác
 - **Giới thiệu diễn giả:** Phiên được dẫn dắt bởi Hoàng Kha, Hữu Nghị, và Hoàng Anh
 
+![Generative AI with Amazon Bedrock](img/generative-ai-with-amazon-bedrock.jpg)
 ### Generative AI với Amazon Bedrock
-- **Foundation Models (FM):** Claude, Llama, Titan — so sánh và hướng dẫn lựa chọn theo nhu cầu use case
 - **Prompt Engineering:** Các kỹ thuật để phản hồi tốt hơn, bao gồm structured prompting và few-shot learning
 - **Reasoning patterns:** Áp dụng các cách tiếp cận reasoning theo từng bước để tăng tính nhất quán cho các tác vụ phức tạp
-- **RAG (Retrieval-Augmented Generation):** Tổng quan kiến trúc và tích hợp Knowledge Base để ground câu trả lời
-- **Bedrock Agents:** Xây dựng workflow nhiều bước và tích hợp tools/actions cho automation
 - **Guardrails:** Safety controls, policy enforcement, và content filtering cho các ứng dụng GenAI có trách nhiệm
 - **Live Demo:** Xây dựng Generative AI chatbot bằng Amazon Bedrock (walkthrough end-to-end)
+
+- **Foundation Models (FM):** Claude, Llama, Titan — so sánh và hướng dẫn lựa chọn theo nhu cầu use case
+
+![Why Foundation Models](img/why-foundation-models.jpg)
+
+**Traditional ML models:** Dữ liệu gán nhãn → train → triển khai từng model riêng cho mỗi tác vụ (text generation, summarization, information extraction, Q&A, chatbot).  
+**Foundation models:** Dữ liệu chưa gán nhãn → pretrain FM → tinh chỉnh/adapter cho nhiều tác vụ (text generation, summarization, information extraction, Q&A, chatbot).
+
+![Supported Foundation Models in Amazon Bedrock](img/supported-foundation-models-in-amazon-bedrock.jpg)
+
+![Prompting Techniques - Chain of Thought (CoT)](img/prompting-techniques-chain-of-thought-cot.jpg)
+
+![What is Retrieval Augmented Generation](img/what-is-retrieval-augmented-generation.jpg)
+
+- **RAG (Retrieval-Augmented Generation):** Tổng quan kiến trúc và tích hợp Knowledge Base để ground câu trả lời
+
+![RAG Use Cases](img/rag-use-cases.jpg)
+
+![RAG in Action](img/rag-in-action.jpg)
+
+![Retrieve and Generate API](img/retrieve-and-generate-api.jpg)
+
+![Data Ingestion Workflow](img/data-ingestion-workflow.jpg)
+
+![Frameworks for Building Agents](img/frameworks-for-building-agents.jpg)
+
+![Amazon Bedrock AgentCore](img/amazon-bedrock-agentcore.jpg)
 
 ## Key Takeaways
 
@@ -49,6 +72,8 @@ pre : " <b> 4.3 </b> "
 - **Use-case first:** Bắt đầu từ bài toán (chatbot, Q&A, automation) rồi chọn đúng model và kiến trúc
 - **Grounding matters:** Với các use case enterprise/knowledge-heavy, độ chính xác phụ thuộc vào retrieval + context, không phải “prompt dài hơn”
 - **Safety by default:** GenAI có trách nhiệm cần guardrails và policy controls ngay từ đầu, không phải thêm sau như một “afterthought”
+
+![Prototype to Production Chasm](img/prototype-to-production-chasm.jpg)
 
 ### Technical Architecture
 - **Model selection:** Chọn model dựa trên cost, latency, quality, và mức độ phù hợp với loại tác vụ (chat, reasoning, summarization)
@@ -66,3 +91,6 @@ pre : " <b> 4.3 </b> "
 
 ## Trải nghiệm sự kiện
 Tham dự “AI/ML/GenAI on AWS” mang lại góc nhìn hands-on về cách Amazon Bedrock có thể được dùng để xây dựng các ứng dụng GenAI sẵn sàng cho production. Cấu trúc workshop giúp dễ dàng đi từ nền tảng (chọn model và prompting) đến các pattern nâng cao như RAG, Agents, và Guardrails. Live demo giúp kết nối các khái niệm thành một chatbot workflow end-to-end có thể tuỳ biến cho các use case tri thức nội bộ thực tế.
+
+![Resources](img/resources.jpg)
+![Group Selfie](img/GroupSelfie.jpg)

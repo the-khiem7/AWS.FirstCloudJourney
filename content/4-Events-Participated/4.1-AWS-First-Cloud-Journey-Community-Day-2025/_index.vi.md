@@ -7,8 +7,6 @@ tags: ["AWS", "Community", "GenAI", "Events"]
 date: 2025-08-30
 ---
 
-# AWS First Cloud Journey Community Day 2025
-
 **Địa điểm:** Bitexco Financial Tower  
 **Ngày:** Thứ Bảy, 30/08/2025  
 

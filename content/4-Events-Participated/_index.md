@@ -19,7 +19,13 @@ Highlights from conferences, meetups, and training sessions attended during the 
   **Location:** Bitexco Financial Tower, Ho Chi Minh City  
   **Role:** Attendee  
 
+- **AI/ML/GenAI on AWS**
+  **Date & Time:** Monday, November 17, 2025  
+  **Location:** Bitexco Financial Tower, Ho Chi Minh City  
+  **Role:** Attendee  
+
 ### Content
 
 - [AWS First Cloud Journey Community Day 2025](4.1-AWS-First-Cloud-Journey-Community-Day-2025/)
 - [AWS Vietnam Cloud Day 2025](4.2-AWS-Vietnam-Cloud-Day-2025/)
+- [AI/ML/GenAI on AWS](4.3-AI-ML-GenAI-on-AWS)
