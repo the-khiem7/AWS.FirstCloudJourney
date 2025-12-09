@@ -5,11 +5,21 @@ weight : 1
 chapter : false
 pre : " <b> 1. </b> "
 ---
-**On this page**, you will need to introduce your worklog. **How** did you complete it? How many weeks did you take to complete the program? **What** did you do in those weeks?
+# Worklog Overview  
+This section provides a complete record of my 12-week learning and project development journey.  
+Throughout the internship period, I followed a structured weekly plan that combined:
 
-Typically, and as a standard, a worklog is carried out over about 3 months (throughout the internship period) with weekly contents as follows:
-### Content
+- Studying AWS cloud services and architectures  
+- Hands-on implementation with real AWS environments and LocalStack  
+- Building and improving an e-commerce web application  
+- Practicing DevOps workflows with Terraform, Amplify, CloudFront, S3, Cognito  
+- Team collaboration, technical discussions, and documentation  
 
+Each weekly worklog describes **what was done**, **why it was done**, and **what outcomes were achieved**, forming a clear narrative of progress from Week 1 to Week 12.
+
+The full worklog spans approximately 3 months, aligning with the standard internship duration.
+
+## Contents
 - [1.1 Week 1 Worklog](1.1-week1/)
 - [1.2 Week 2 Worklog](1.2-week2/)
 - [1.3 Week 3 Worklog](1.3-week3/)

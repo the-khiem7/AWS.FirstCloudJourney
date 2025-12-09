@@ -1,22 +1,34 @@
 ---
-title : "Giới thiệu"
+title : "Worklog"
 
 weight : 1 
 chapter : false
 pre : " <b> 1. </b> "
 ---
-**Session Manager** là một chức năng nằm trong dịch vụ System Manager của AWS, Session Manager cung cấp khả năng quản lý các máy chủ một cách an toàn mà **không cần mở port SSH, không cần Bastion Host hoặc quản lý SSH key**. 
-Session Manager cũng giúp dễ dàng tuân thủ các chính sách của công ty yêu cầu quyền truy cập có kiểm soát, đảm bảo việc bảo mật nghiêm ngặt và ghi log truy việc truy cập trong khi vẫn cung cấp cho người dùng cuối quyền truy cập đa nền tảng.
+# Tổng quan Worklog  
+Phần này ghi lại toàn bộ hành trình 12 tuần học tập và phát triển dự án.  
+Trong suốt thời gian thực tập, tôi tuân theo một kế hoạch làm việc theo tuần, bao gồm:
 
-Với việc sử dụng Session Manager, bạn sẽ có được những ưu điểm sau:
+- Học các dịch vụ AWS và kiến trúc cloud  
+- Triển khai thực hành trên môi trường AWS thật và LocalStack  
+- Xây dựng & cải tiến web thương mại điện tử  
+- Áp dụng DevOps workflow: Terraform, Amplify, CloudFront, S3, Cognito  
+- Làm việc nhóm, họp kỹ thuật, và ghi chép tài liệu  
 
-- Không cần phải mở cổng 22 cho giao thức SSH.
-- Có thể cấu hình để kết nối không cần đi ra ngoài internet.
-- Không cần quản lý private key của server để kết nối SSH.
-- Quản lý tập trung được user bằng việc sử dụng AWS IAM.
-- Truy cập tới server một cách dễ dàng và đơn giản bằng một cú click chuột.
-- Thời gian truy cập nhanh chóng hơn các phương thức truyền thống như SSH.
-- Hỗ trợ nhiều hệ điều hành khác nhau như Linux, Windows, MacOS.
-- Log lại được các phiên kết nối và các câu lệnh đã thực thi trong lúc kết nối tới server.
+Mỗi tuần đều mô tả rõ **những việc đã làm**, **mục đích**, và **kết quả đạt được**, giúp hình thành một dòng chảy phát triển xuyên suốt từ Tuần 1 đến Tuần 12.
 
-Với những ưu điểm trên, bạn có thể sử dụng Session Manager thay vì sử dụng kỹ thuật Bastion host giúp chúng ta tiết kiệm được thời gian và chi phí khi quản lý server Bastion.
+Worklog kéo dài khoảng 3 tháng, phù hợp thời lượng chuẩn của kỳ thực tập.
+
+## Mục lục
+- [1.1 Worklog Tuần 1](1.1-week1/)
+- [1.2 Worklog Tuần 2](1.2-week2/)
+- [1.3 Worklog Tuần 3](1.3-week3/)
+- [1.4 Worklog Tuần 4](1.4-week4/)
+- [1.5 Worklog Tuần 5](1.5-week5/)
+- [1.6 Worklog Tuần 6](1.6-week6/)
+- [1.7 Worklog Tuần 7](1.7-week7/)
+- [1.8 Worklog Tuần 8](1.8-week8/)
+- [1.9 Worklog Tuần 9](1.9-week9/)
+- [1.10 Worklog Tuần 10](1.10-week10/)
+- [1.11 Worklog Tuần 11](1.11-week11/)
+- [1.12 Worklog Tuần 12](1.12-week12/)
