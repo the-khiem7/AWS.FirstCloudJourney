@@ -35,13 +35,13 @@ Two buckets are relevant:
 
 Hour partitions make batch ETL easier (e.g., process previous hour or a specific day/hour prefix).
 
-![S3 RAW bucket events](/images/aws-s3-clickstream-ingest-events.png)
+![S3 RAW bucket events](/images/5-Workshop/5-3-s3-clickstream-events.png)
 
 ---
 
 ## 5.3.3 Lambda Ingest Design — `clickstream-lambda-ingest`
 
-![Lambda Ingest](/images/aws-lambda-clickstream-ingest-config.png)
+![Lambda Ingest](/images/5-Workshop/5-3-lambda-clickstream-config.png)
 
 ### Responsibilities
 
@@ -69,7 +69,7 @@ The HTTP API provides a public HTTPS endpoint for ingestion:
 - Route:
   - `POST /clickstream` → Lambda `clickstream-lambda-ingest`  
 
-![Route POST /clickstream](/images/aws-apigw-clickstream-routes.png)
+![Route POST /clickstream](/images/5-Workshop/5-3-apigw-clickstream-routes.png)
 
 Recommended options:
 

@@ -28,7 +28,7 @@ pre: " <b> 5.4. </b> "
 
 ## 5.4.2 VPC Endpoints (S3 & SSM)
 
-![VPC Endpoint for S3 & SSM](/images/aws-vpc-endpoints-s3-ssm.png)
+![VPC Endpoint for S3 & SSM](/images/5-Workshop/5-4-vpc-endpoints-s3-ssm.png)
 
 ### S3 Gateway VPC Endpoint
 
@@ -110,7 +110,7 @@ ETL Lambda is where batch processing happens.
 
 ## 5.4.5 EventBridge Scheduling – `SBW_ETL_HOURLY_RULE`
 
-![EventBridge rule](/images/aws-eventbridge-sbw-etl-hourly-rule.png)
+![EventBridge rule](/images/5-Workshop/5-4-eventbridge-hourly-rule.png)
 
 EventBridge drives the **batch nature** of the platform:
 

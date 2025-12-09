@@ -35,13 +35,13 @@ Hai bucket liên quan:
 
 Phân vùng theo giờ giúp ETL lô dễ hơn (vd xử lý giờ trước hoặc prefix ngày/giờ cụ thể).
 
-![Sự kiện bucket S3 RAW](/images/aws-s3-clickstream-ingest-events.png)
+![Sự kiện bucket S3 RAW](/images/5-Workshop/5-3-s3-clickstream-events.png)
 
 ---
 
 ## 5.3.3 Thiết kế Lambda Ingest - `clickstream-lambda-ingest`
 
-![Lambda Ingest](/images/aws-lambda-clickstream-ingest-config.png)
+![Lambda Ingest](/images/5-Workshop/5-3-lambda-clickstream-config.png)
 
 ### Nhiệm vụ
 
@@ -69,7 +69,7 @@ HTTP API cung cấp endpoint HTTPS công khai cho ingestion:
 - Route:
   - `POST /clickstream` -> Lambda `clickstream-lambda-ingest`  
 
-![Route POST /clickstream](/images/aws-apigw-clickstream-routes.png)
+![Route POST /clickstream](/images/5-Workshop/5-3-apigw-clickstream-routes.png)
 
 Tùy chọn khuyến nghị:
 

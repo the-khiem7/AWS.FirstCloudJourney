@@ -5,7 +5,7 @@ chapter: false
 pre: " <b> 5.2. </b> "
 ---
 
-![Architecture](/images/architecture.png)
+![Architecture](/images/5-Workshop/5-0-architecture.png)
 <p align="center"><em>Figure: Architecture Batch-base Clickstream Analytics Platform.</em></p>
 
 
