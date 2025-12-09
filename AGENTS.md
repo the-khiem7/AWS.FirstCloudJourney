@@ -5,9 +5,9 @@
 - Do not keep alternate encodings in the repo. The ftfy dependency is only for recovery; it is not required for normal builds.
 
 ## OCR Skill (local images)
-- Install Tesseract (e.g., `choco install tesseract` or `winget install tesseract`) and ensure `tesseract.exe` is on PATH.
-- Install Python deps: `pip install pytesseract pillow`.
-- Set Tesseract data path if needed: `$env:TESSDATA_PREFIX="C:\Program Files\Tesseract-OCR\tessdata"`.
+- Check before install: `tesseract --version`; `pip show pytesseract pillow`.
+- If missing, install once: `choco install tesseract` (or `winget install tesseract`); then `pip install pytesseract pillow`.
+- Ensure `tesseract.exe` on PATH; set data path if needed: `$env:TESSDATA_PREFIX="C:\Program Files\Tesseract-OCR\tessdata"`.
 - OCR a local image (VI/EN):  
   ```powershell
   @'
