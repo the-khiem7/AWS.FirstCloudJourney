@@ -9,7 +9,7 @@ pre: " <b> 2. </b> "
 
 # Batch-based Clickstream Analytics Platform
 
-### 1. Tóm tắt
+### 1. Tóm tắt 
 
 Dự án này nhằm **thiết kế và triển khai Batch-based Clickstream Analytics Platform** cho một website thương mại điện tử chuyên về **máy tính và phụ kiện** (giao diện frontend của website được tích hợp một **JavaScript SDK** nhẹ để gửi dữ liệu hoạt động của người dùng như **clicks**, **views**, **searches** tới **backend API**) bằng cách sử dụng **AWS Cloud Services**.
 Hệ thống thu thập dữ liệu tương tác của người dùng (như **clicks**, **searches**, và **page visits**) từ website và lưu trữ chúng trong **Amazon S3** dưới dạng **raw logs**. Cứ mỗi giờ, **Amazon EventBridge** sẽ kích hoạt **AWS Lambda** để xử lý và chuyển đổi dữ liệu trước khi nạp vào **data warehouse** được lưu trữ trên **Amazon EC2**.
@@ -30,7 +30,7 @@ Kết quả là, họ gặp khó khăn trong việc:
 
 - Hiểu hành vi mua hàng của khách hàng (customer purchasing behavior)
 - Xác định sản phẩm hoạt động hiệu quả nhất (top-performing products)
-- Tối ưu hóa marketing campaigns** và **hiệu suất website (website performance)
+- Tối ưu hóa marketing campaigns và hiệu suất website (website performance)
 - Ra quyết định về tồn kho (inventory) và giá cả (pricing) dựa trên dữ liệu (data-driven decisions)
 
 #### Giải pháp
@@ -48,9 +48,9 @@ Kết quả được visualize bằng **R Shiny dashboards**, giúp chủ cửa 
 
 ### 3. Kiến trúc giải pháp
 
-![Architecture](/images/2-Proposal/AWS_Architecture_ver4.png)
+![Architecture](/images/2.proposal/SBW_Architecture_V10.jpg)
 
-### Dịch vụ AWS sử dụng
+#### Dịch vụ AWS sử dụng
 
 - **Amazon Cognito**: Quản lý quá trình xác thực và phân quyền người dùng cho cả quản trị viên và khách hàng của website, đảm bảo quyền truy cập an toàn vào nền tảng e-commerce.
 - **Amazon S3**: Hoạt động như một lớp lưu trữ dữ liệu tập trung — lưu trữ giao diện website tĩnh (static website front-end) và các clickstream logs thô được thu thập từ tương tác người dùng. Ngoài ra, nó còn tạm thời lưu trữ các batch files trước khi được xử lý và chuyển đến data warehouse.
@@ -64,7 +64,7 @@ Kết quả được visualize bằng **R Shiny dashboards**, giúp chủ cửa 
 - **Amazon CloudWatch**: Thu thập và giám sát các metrics, logs, và trạng thái của các scheduled jobs từ Lambda và EC2 để duy trì độ tin cậy và khả năng quan sát hiệu suất hệ thống.
 - **Amazon SNS**: Gửi thông báo hoặc cảnh báo khi batch jobs hoàn thành, thất bại hoặc gặp lỗi, đảm bảo doanh nghiệp kịp thời nắm bắt tình trạng vận hành.
 
-### 4. Triển khai kỹ thuật
+### 4. Triển khai 
 
 #### End-to-end data flow
 
@@ -263,7 +263,7 @@ Mục đích: chạy ETL và lưu trữ analytical store được Shiny truy v�
 - R Shiny dashboard app: gồm 5 modules, triển khai với Nginx/ALB TLS setup.
 - Runbook: bao gồm alarms, on-call, backups, disaster recovery, freshness SLO, và cost guardrails.
 
-### 5. Lộ trình & Mốc triển khai
+### 5. Kế hoạch triển khai
 
 ### Dự án theo tiến độ
 
@@ -287,7 +287,7 @@ Tích hợp tất cả các dịch vụ AWS và đảm bảo độ tin cậy c�
 Thực hiện kiểm thử hiệu năng và chức năng.  
 Hoàn thiện tài liệu và chuẩn bị dự án cho buổi thuyết trình.
 
-### 6. Ước tính ngân sách
+### 6. Ước tính chi phí
 
 Có thể xem chi phí trên [AWS Pricing Calculator](https://calculator.aws/#/estimate?id=621f38b12a1ef026842ba2ddfe46ff936ed4ab01)  
 Hoặc tải [tệp ước tính ngân sách](../attachments/budget_estimation.pdf).
@@ -303,7 +303,7 @@ Hoặc tải [tệp ước tính ngân sách](../attachments/budget_estimation.p
     - S3 Standard: 0.17 USD/tháng (6 GB, 1,000 PUT requests, 1,000 GET requests, 6 GB Data returned, 6 GB Data scanned)
     - Data Transfer: 0.00 USD/tháng (Outbound 6 TB, Inbound 6 TB)
 
-  - **Amazon CloudFront (Asia Pacific)**: 1.08 USD/tháng(6 GB Data transfer out to internet, 6 GB Data transfer out to origin, 10,000 HTTPS requests)
+  - **Amazon CloudFront (United States)**: 0.64 USD/tháng(6 GB Data transfer out to internet, 6 GB Data transfer out to origin, 10,000 HTTPS requests)
 
   - **Amazon API Gateway (HTTP APIs)**: 0.01 USD/tháng(10,000 HTTP API requests units)
 
@@ -311,14 +311,13 @@ Hoặc tải [tệp ước tính ngân sách](../attachments/budget_estimation.p
 
   - **Amazon CloudWatch (APIs)**: 0.03 USD/tháng(100 metrics GetMetricData, 1,000 metrics GetMetricWidgetImage, 1,000 API requests)
 
-  - **Amazon SNS (Service settings)**: 0.03 USD/tháng(1,000,000 requests, 100,000 HTTP/HTTPS Notifications, 1,000 EMAIL/EMAIL-JSON Notifications, 100,000,000 QS Notifications, 100,000,000 Lambda deliveries, 100,000 Kinesis Data Firehose notifications)
+  - **Amazon SNS (Service settings)**: 0.02 USD/tháng(1,000,000 requests, 100,000 HTTP/HTTPS Notifications, 1,000 EMAIL/EMAIL-JSON Notifications, 100,000,000 QS Notifications, 100,000,000 Lambda deliveries, 100,000 Kinesis Data Firehose notifications)
 
-  - **Amazon EC2 (EC2 specifications)**: 9.42 USD/tháng(1 instance t3.small)
+  - **Amazon EC2 (EC2 specifications)**: 1.68 USD/tháng(1 instance, 730 Compute Savings Plans)
 
   - **Amazon EventBridge**: 0.00 USD/tháng(1,000,000 events (AWS management events - EventBridge Event Bus Ingestion))
-  - **Amazon Amplify**: 0.20 USD/tháng(Web App Hosting)
 
-Tổng cộng: 11.05 USD/tháng, 132.60 USD/12 tháng
+Tổng cộng: 2.65 USD/tháng, 31.8 USD/12 tháng
 
 ### 7. Đánh giá rủi ro
 

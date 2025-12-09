@@ -16,7 +16,7 @@ The system collects user interaction data (such as clicks, searches, and page vi
 
 The processed data is visualized through **R Shiny dashboards**, providing store owners with business insights such as customer behavior patterns, product popularity, and website engagement trends.
 
-This architecture focuses on **batch analytics**, **ETL pipeline**s, and **business intelligence** while ensuring **security**, **scalability**, and **cost efficiency** by leveraging AWS managed services.
+This architecture focuses on **batch analytics**, **ETL pipeline**s, and **business intelligence** while ensuring **security**, **scalability**, and **cost efficiency** by leveraging **AWS managed services**.
 
 ### 2. Problem Statement
 
@@ -48,7 +48,7 @@ The results are visualized using **R Shiny dashboards**, enabling store owners t
 
 ### 3. Solution Architecture
 
-![Architecture](/images/2-Proposal/AWS_Architecture_ver4.png)
+![Architecture](/images/2.proposal/SBW_Architecture_V10.jpg)
 
 #### AWS Services Used
 
@@ -58,12 +58,11 @@ The results are visualized using **R Shiny dashboards**, enabling store owners t
 - **Amazon API Gateway**: Serves as the main entry point for incoming API calls from the website, enabling secure data submission (such as clickstream or browsing activity) into AWS.
 - **AWS Lambda**: Executes serverless functions to preprocess and organize clickstream data uploaded to S3. It also handles scheduled data transformation jobs triggered by EventBridge before loading them into the data warehouse.
 - **Amazon EventBridge**: Schedules and orchestrates batch workflows — for example, triggering Lambda functions every hour to process and move clickstream data from S3 into the EC2 data warehouse.
-- **Amazon EC2**: Acts as the data warehouse environment, running PostgreSQL or another relational database for batch analytics, trend analysis, and business reporting. Both instances are deployed inside a VPC private subnet for network isolation and security
+- **Amazon EC2 (Data Warehouse)**: Acts as the data warehouse environment, running PostgreSQL or another relational database for batch analytics, trend analysis, and business reporting. Both instances are deployed inside a VPC private subnet for network isolation and security
 - **R Shiny (on EC2)**: Hosts interactive dashboards that visualize batch-processed insights, helping the business explore customer behavior, popular products, and sales opportunities.
 - **AWS IAM**: Manages access permissions and policies to ensure that only authorized users and AWS components can interact with data and services.
 - **Amazon CloudWatch**: Collects and monitors metrics, logs, and scheduled job statuses from Lambda and EC2 to maintain system reliability and performance visibility.
 - **Amazon SNS**: Sends notifications or alerts when batch jobs complete, fail, or encounter errors, ensuring timely operational awareness.
-- **Amazon Amplify**: Hosts and deploys the front-end e-commerce website with a fully managed CI/CD pipeline, integrating seamlessly with Cognito for user authentication and enabling secure API communication with API Gateway.
 
 ### 4. Technical Implementation
 
@@ -220,7 +219,7 @@ Purpose: run ETL + host the curated analytical store that Shiny queries. Two cho
 - Ingest Lambda: s3:PutObject to raw bucket (scoped to prefix), s3:ListBucket on needed prefixes.
 - ETL Lambda: s3:GetObject/ListBucket on raw prefixes; permission to fetch secrets from SSM Parameter Store; no broad S3 access.
 - EC2 roles: read/write only to its own DB/volumes; optional read to S3 for backups.
-- Shiny EC2: no write to S3 raw; read-only to Postgres as needed
+- Shiny EC2: no write to S3 raw; read-only to Postgres as needed.
 
 **Network**
 
@@ -290,7 +289,8 @@ Finalize documentation and prepare the project for presentation.
 
 ### 6. Budget Estimation
 
-Pricing report[Budget Estimation File](/images/2-Proposal/pricing_report.pdf).
+You can find the budget estimation on the [AWS Pricing Calculator](https://calculator.aws/#/estimate?id=621f38b12a1ef026842ba2ddfe46ff936ed4ab01).
+Or you can download the [Budget Estimation File](../attachments/budget_estimation.pdf).
 
 ### Infrastructure Costs
 
@@ -300,10 +300,10 @@ Pricing report[Budget Estimation File](/images/2-Proposal/pricing_report.pdf).
 
   - **Amazon S3**
 
-    - 3 Standard: 0.18 USD/monthly(6 GB, 1,000 PUT requests, 1,000 GET requests, 6 GB Data returned, 6 GB Data scanned)
-    - Data Transfer: 0.00 USD/monthly(Inbound: 6 TB)
+    - 3 Standard:0.17 USD/monthly(6 GB, 1,000 PUT requests, 1,000 GET requests, 6 GB Data returned, 6 GB Data scanned)
+    - Data Transfer: 0.00 USD/monthly(Outbound: 6 TB, Inbound: 6 TB)
 
-  - **Amazon CloudFront(Asia Pacific)**: 1.08 USD/monthly(6 GB Data transfer out to internet, 6 GB Data transfer out to origin, 10,000 requests Number of requests (HTTPS))
+  - **Amazon CloudFront(United States)**: 0.64 USD/monthly(6 GB Data transfer out to internet, 6 GB Data transfer out to origin, 10,000 requests Number of requests (HTTPS))
 
   - **Amazon API Gateway(HTTP APIs)**: 0.01 USD/monthly(10,000 requests for HTTP API requests units)
 
@@ -311,14 +311,13 @@ Pricing report[Budget Estimation File](/images/2-Proposal/pricing_report.pdf).
 
   - **Amazon CloudWatch(APIs)**: 0.03 USD/monthly(100 metrics GetMetricData, 1,000 metrics GetMetricWidgetImage, 1,000 requests API)
 
-  - **Amazon SNS(Service settings)**: 0.03 USD/monthly(1,000,000 requests, 100,000 calls HTTP/HTTPS Notifications, 1,000 calls EMAIL/EMAIL-JSON Notifications, 100,000,000 notifications QS Notifications, 100,000,000 deliveries Amazon Web Services Lambda, 100,000 notifications Amazon Kinesis Data Firehose)
+  - **Amazon SNS(Service settings)**: 0.02 USD/monthly(1,000,000 requests, 100,000 calls HTTP/HTTPS Notifications, 1,000 calls EMAIL/EMAIL-JSON Notifications, 100,000,000 notifications QS Notifications, 100,000,000 deliveries Amazon Web Services Lambda, 100,000 notifications Amazon Kinesis Data Firehose)
 
-  - **Amazon EC2(EC2 specifications)**: 9.42 USD/monthly(1 instances t3.small)
+  - **Amazon EC2(EC2 specifications)**: 1.68 USD/monthly(1 instances, 730 Compute Savings Plans)
 
   - **Amazon EventBridge**: 0.00 USD/monthly(1,000,000 events(Number of AWS management events) EventBridge Event Bus - Ingestion)
-  - **Amazon Amplify**: 0.20 USD/monthly(Web App Hosting)
 
-Total: 11.05 USD/month, 132.60 USD/12 months
+Total: 2.65 USD/month, 31.8 USD/12 months
 
 ### 7. Risk Assessment
 
