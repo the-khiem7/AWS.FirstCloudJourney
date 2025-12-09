@@ -1,22 +1,29 @@
 ---
-title : "Worklog Tuần 9"
-
+title : "Week 9 Worklog"
 weight : 9
 chapter : false
 pre : " <b> 1.9. </b> "
 ---
-**Session Manager** là một chức năng nằm trong dịch vụ System Manager của AWS, Session Manager cung cấp khả năng quản lý các máy chủ một cách an toàn mà **không cần mở port SSH, không cần Bastion Host hoặc quản lý SSH key**. 
-Session Manager cũng giúp dễ dàng tuân thủ các chính sách của công ty yêu cầu quyền truy cập có kiểm soát, đảm bảo việc bảo mật nghiêm ngặt và ghi log truy việc truy cập trong khi vẫn cung cấp cho người dùng cuối quyền truy cập đa nền tảng.
+## Week 9 Objectives:
+- Hoàn thiện build web và bắt đầu đưa dữ liệu lên.  
+- Làm rõ vai trò CloudFront và Amplify trong kiến trúc.  
+- Thiết lập môi trường local bằng LocalStack PRO trước khi deploy AWS thật.  
+- Chuẩn hóa thư viện Python, ORM và các dependency.  
+- Tiếp tục tối ưu architecture dự án.  
 
-Với việc sử dụng Session Manager, bạn sẽ có được những ưu điểm sau:
+---
+## Tasks to be carried out this week:
 
-- Không cần phải mở cổng 22 cho giao thức SSH.
-- Có thể cấu hình để kết nối không cần đi ra ngoài internet.
-- Không cần quản lý private key của server để kết nối SSH.
-- Quản lý tập trung được user bằng việc sử dụng AWS IAM.
-- Truy cập tới server một cách dễ dàng và đơn giản bằng một cú click chuột.
-- Thời gian truy cập nhanh chóng hơn các phương thức truyền thống như SSH.
-- Hỗ trợ nhiều hệ điều hành khác nhau như Linux, Windows, MacOS.
-- Log lại được các phiên kết nối và các câu lệnh đã thực thi trong lúc kết nối tới server.
+| Day | Task | Start Date | Completion Date | Reference Material |
+|-----|------|------------|-----------------|-------------------|
+| 1 | - Hoàn thành build web. <br> - Bắt đầu upload dữ liệu. <br> - Nghiên cứu CloudFront (bổ sung ý nghĩa). <br> - Xác định vị trí Amplify trong flow. <br> - Test local trước khi deploy AWS. <br> - Nghiên cứu LocalStack PRO. <br> - Chốt thư viện Python & ORM. <br> - Clickstream: tiếp tục nghiên cứu đến 07/11. | 05/11/2025 14:15 | 05/11/2025 15:40 | Internal meeting notes |
+| 2 | - Review CloudFront lần nữa. <br> - Chuyển sang dùng LocalStack PRO. <br> - Sửa website, đổi database sang Supabase. <br> - Update architecture (thêm Amplify + PostgreSQL). <br> - Kiểm tra thư viện Python. <br> - Cập nhật mục tiêu Proposal. | 09/11/2025 20:30 | 09/11/2025 24:00 | Internal meeting notes |
 
-Với những ưu điểm trên, bạn có thể sử dụng Session Manager thay vì sử dụng kỹ thuật Bastion host giúp chúng ta tiết kiệm được thời gian và chi phí khi quản lý server Bastion.
+---
+## Week 9 Achievements:
+- Web build thành công và bắt đầu thêm dữ liệu.  
+- Hiểu rõ cách CloudFront + Amplify vận hành trong hệ thống.  
+- Dùng LocalStack PRO để mô phỏng AWS môi trường local.  
+- Chuyển sang Supabase → kiến trúc linh hoạt và đơn giản hơn.  
+- Chuẩn hóa bộ thư viện Python và ORM.  
+- Đã chỉnh proposal để phù hợp tiến độ thực tế.  
