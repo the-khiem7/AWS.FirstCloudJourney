@@ -5,7 +5,7 @@ weight : 4
 chapter : false
 pre : " <b> 1.4. </b> "
 ---
-## Week 4 Objectives:
+## Mục tiêu Tuần 4:
 - Hiểu sâu về **dịch vụ lưu trữ trên AWS**, bao gồm S3, Glacier, Snow Family, Storage Gateway và Backup.  
 - Nắm chắc các cơ chế truy cập & bảo mật S3: Access Point, Storage Class, ACL, CORS, Versioning, Replication.  
 - Thực hành end-to-end: static website hosting, CloudFront CDN, replication multi-region.  
@@ -13,7 +13,7 @@ pre : " <b> 1.4. </b> "
 - Thành thạo quản lý file system Multi-AZ, hiệu năng, shadow copy, deduplication, và scaling.
 
 ---
-## Tasks to be carried out this week:
+## Nhiệm vụ thực hiện trong tuần:
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
@@ -26,7 +26,7 @@ pre : " <b> 1.4. </b> "
 [1]: https://www.youtube.com/playlist?list=PLahN4TLWtox2a3vElknwzU_urND8hLn1i
 
 ---
-## Week 4 Achievements:
+## Thành tựu Tuần 4:
 - Thành thạo các tính năng quan trọng của S3: Storage Class, Access Point, ACL, CORS, Performance, Glacier.  
 - Thiết lập thành công static website hosting + CloudFront CDN và cấu hình truy cập công khai/an toàn.  
 - Thực hành đầy đủ quy trình Backup: lên plan, gán resource, nhận thông báo, test restore, cleanup.  

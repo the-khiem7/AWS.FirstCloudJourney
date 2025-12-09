@@ -4,7 +4,7 @@ weight : 9
 chapter : false
 pre : " <b> 1.9. </b> "
 ---
-## Week 9 Objectives:
+## Mục tiêu Tuần 9:
 - Hoàn thiện build web và bắt đầu đưa dữ liệu lên.  
 - Làm rõ vai trò CloudFront và Amplify trong kiến trúc.  
 - Thiết lập môi trường local bằng LocalStack PRO trước khi deploy AWS thật.  
@@ -12,7 +12,7 @@ pre : " <b> 1.9. </b> "
 - Tiếp tục tối ưu architecture dự án.  
 
 ---
-## Tasks to be carried out this week:
+## Nhiệm vụ thực hiện trong tuần:
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
@@ -20,7 +20,7 @@ pre : " <b> 1.9. </b> "
 | 2 | - Review CloudFront lần nữa. <br> - Chuyển sang dùng LocalStack PRO. <br> - Sửa website, đổi database sang Supabase. <br> - Update architecture (thêm Amplify + PostgreSQL). <br> - Kiểm tra thư viện Python. <br> - Cập nhật mục tiêu Proposal. | 09/11/2025 20:30 | 09/11/2025 24:00 | Internal meeting notes |
 
 ---
-## Week 9 Achievements:
+## Thành tựu Tuần 9:
 - Web build thành công và bắt đầu thêm dữ liệu.  
 - Hiểu rõ cách CloudFront + Amplify vận hành trong hệ thống.  
 - Dùng LocalStack PRO để mô phỏng AWS môi trường local.  

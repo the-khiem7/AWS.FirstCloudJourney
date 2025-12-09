@@ -4,7 +4,7 @@ weight : 8
 chapter : false
 pre : " <b> 1.8. </b> "
 ---
-## Week 8 Objectives:
+## Mục tiêu Tuần 8:
 - Gặp mặt team trực tiếp để thống nhất định hướng và quy trình làm việc.  
 - Chuẩn hóa proposal, tài liệu và quy trình trước khi vào giai đoạn build thật.  
 - Triển khai GitHub Pages, tạo môi trường làm việc chung.  
@@ -12,7 +12,7 @@ pre : " <b> 1.8. </b> "
 - Đặt nền móng cho việc thiết kế database và Clickstream.
 
 ---
-## Tasks to be carried out this week:
+## Nhiệm vụ thực hiện trong tuần:
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
@@ -20,7 +20,7 @@ pre : " <b> 1.8. </b> "
 | 2 | - Nghiên cứu Cognito & S3. <br> - Bắt đầu build web dựa trên template Git. <br> - Quyết định không dùng backend riêng. <br> - Tìm hiểu Clickstream (cơ chế, code, thuật toán). <br> - Xác định database phù hợp. <br> - Sửa lại architecture. <br> - Nghiên cứu ORM trong template frontend. | 29/10/2025 22:30 | 30/10/2025 00:30 | Internal meeting notes |
 
 ---
-## Week 8 Achievements:
+## Thành tựu Tuần 8:
 - Team đã gặp mặt, thống nhất quy trình làm việc & mục tiêu tuần.  
 - GitHub Pages được khởi tạo & nội dung được chuẩn hóa.  
 - Bắt đầu build web e-commerce từ template có sẵn.  

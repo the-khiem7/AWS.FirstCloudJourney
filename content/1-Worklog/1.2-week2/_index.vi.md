@@ -5,7 +5,7 @@ weight : 2
 chapter : false
 pre : " <b> 1.2. </b> "
 ---
-## Week 2 Objectives:
+## Mục tiêu Tuần 2:
 - Hiểu nền tảng về **AWS VPC** và các khái niệm mạng cốt lõi trong AWS.  
 - Nắm được cơ chế bảo mật VPC: **Security Group**, **Network ACL**, Routing, Subnet, IGW, NAT.  
 - Tiếp cận các mô hình hybrid networking: **VPN**, **DirectConnect**, **Route 53 Resolver**.  
@@ -13,7 +13,7 @@ pre : " <b> 1.2. </b> "
 - Củng cố kỹ năng thiết kế mạng trong AWS cho các module tiếp theo.
 
 ---
-## Tasks to be carried out this week:
+## Nhiệm vụ thực hiện trong tuần:
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
@@ -26,7 +26,7 @@ pre : " <b> 1.2. </b> "
 [1]: https://www.youtube.com/playlist?list=PLahN4TLWtox2a3vElknwzU_urND8hLn1i
 
 ---
-## Week 2 Achievements:
+## Thành tựu Tuần 2:
 - Hiểu rõ cấu trúc mạng AWS và cách thiết kế VPC từ đầu.  
 - Áp dụng thực tế **IGW, NAT Gateway, Route Table, Subnet**, và bảo mật mạng.  
 - Phân biệt rõ giữa **Security Group (stateful)** và **Network ACL (stateless)**.  

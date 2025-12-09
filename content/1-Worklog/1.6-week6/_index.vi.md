@@ -5,7 +5,7 @@ weight : 6
 chapter : false
 pre : " <b> 1.6. </b> "
 ---
-## Week 6 Objectives:
+## Mục tiêu Tuần 6:
 - Ôn tập toàn diện các khái niệm về **Database**: RDBMS, NoSQL, OLTP, OLAP, indexing, replication, backup.  
 - Hiểu sâu các dịch vụ database của AWS: **RDS, Aurora, Redshift, ElastiCache**.  
 - Thực hành triển khai một ứng dụng dùng RDS trong VPC hoàn chỉnh (subnet group, SG, EC2, backup & restore).  
@@ -14,7 +14,7 @@ pre : " <b> 1.6. </b> "
 - Làm việc với S3 như một điểm trung gian trong pipeline migration.  
 
 ---
-## Tasks to be carried out this week:
+## Nhiệm vụ thực hiện trong tuần:
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
@@ -27,7 +27,7 @@ pre : " <b> 1.6. </b> "
 [1]: https://www.youtube.com/playlist?list=PLahN4TLWtox2a3vElknwzU_urND8hLn1i
 
 ---
-## Week 6 Achievements:
+## Thành tựu Tuần 6:
 - Củng cố kiến thức về database và hiểu cách AWS tối ưu hóa RDS và Aurora cho hiệu năng & tính sẵn sàng.  
 - Tự triển khai full-stack app với backend dùng RDS trong môi trường VPC an toàn.  
 - Thực hành backup, restore và hiểu ảnh hưởng của multi-AZ, replication, storage autoscaling.  

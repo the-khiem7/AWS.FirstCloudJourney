@@ -5,7 +5,7 @@ weight : 5
 chapter : false
 pre : " <b> 1.5. </b> "
 ---
-## Week 5 Objectives:
+## Mục tiêu Tuần 5:
 - Hiểu rõ **Shared Responsibility Model** và nền tảng bảo mật trên AWS.  
 - Thành thạo các dịch vụ Identity: **IAM, Identity Center, AWS Organizations, Cognito**.  
 - Nắm vững **Key Management Service (KMS)**, CloudTrail, Athena để phân tích truy vết bảo mật.  
@@ -14,7 +14,7 @@ pre : " <b> 1.5. </b> "
 - Kích hoạt và đánh giá Security Hub để theo dõi posture bảo mật của tài khoản AWS.  
 
 ---
-## Tasks to be carried out this week:
+## Nhiệm vụ thực hiện trong tuần:
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
@@ -27,7 +27,7 @@ pre : " <b> 1.5. </b> "
 [1]: https://www.youtube.com/playlist?list=PLahN4TLWtox2a3vElknwzU_urND8hLn1i
 
 ---
-## Week 5 Achievements:
+## Thành tựu Tuần 5:
 - Hiểu rõ kiến trúc bảo mật AWS và cách phân chia trách nhiệm giữa AWS & khách hàng.  
 - Thành thạo cách tạo user, policy, group, role, switch role và cấu hình IAM nâng cao.  
 - Vận dụng tagging để tự động hóa, phân nhóm, giới hạn truy cập và kiểm soát resource hiệu quả.  

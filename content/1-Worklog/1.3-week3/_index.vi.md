@@ -5,7 +5,7 @@ weight : 3
 chapter : false
 pre : " <b> 1.3. </b> "
 ---
-## Week 3 Objectives:
+## Mục tiêu Tuần 3:
 - Làm chủ kiến thức về **Compute Services trên AWS**, tập trung vào EC2 và toàn bộ vòng đời vận hành.  
 - Hiểu chi tiết EC2: Instance type, AMI, EBS, Instance Store, User Data, Metadata, Autoscaling.  
 - Tiếp cận các dịch vụ compute mở rộng: **EFS, FSx, Lightsail, MGN**.  
@@ -14,7 +14,7 @@ pre : " <b> 1.3. </b> "
 - Thực hành Storage Gateway để tích hợp hạ tầng hybrid.
 
 ---
-## Tasks to be carried out this week:
+## Nhiệm vụ thực hiện trong tuần:
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
@@ -27,7 +27,7 @@ pre : " <b> 1.3. </b> "
 [1]: https://www.youtube.com/playlist?list=PLahN4TLWtox2a3vElknwzU_urND8hLn1i
 
 ---
-## Week 3 Achievements:
+## Thành tựu Tuần 3:
 - Nắm vững kiến trúc EC2, bao gồm AMI, EBS, Instance Store và cơ chế Autoscaling.  
 - Hiểu rõ cách EC2 khởi tạo với User Data và cách Metadata được dùng cho tự động hoá.  
 - Thực hành triển khai giải pháp Backup đầy đủ: tạo plan, backup, restore và cleanup.  

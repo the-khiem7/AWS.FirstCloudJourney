@@ -4,14 +4,14 @@ weight : 10
 chapter : false
 pre : " <b> 1.10. </b> "
 ---
-## Week 10 Objectives:
+## Mục tiêu Tuần 10:
 - Hoàn thiện nhiều vòng chỉnh sửa Architecture.  
 - Chuẩn hóa môi trường dev: Docker, LocalStack, Terraform.  
 - Tạo template tài liệu chuẩn và phân công viết nội dung.  
 - Kiểm tra và nghiệm thu template trước deadline.  
 
 ---
-## Tasks to be carried out this week:
+## Nhiệm vụ thực hiện trong tuần:
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
@@ -21,7 +21,7 @@ pre : " <b> 1.10. </b> "
 | 4 | - Kiểm tra nội dung template. <br> - Hoàn thành nghiệm thu template. | 16/11/2025 13:00 | 16/11/2025 14:00 | Meeting notes |
 
 ---
-## Week 10 Achievements:
+## Thành tựu Tuần 10:
 - Architecture được tối ưu qua nhiều vòng.  
 - Môi trường dev dùng Docker + LocalStack đã sẵn sàng.  
 - Template tài liệu hoàn chỉnh và phân chia nhiệm vụ rõ ràng.  

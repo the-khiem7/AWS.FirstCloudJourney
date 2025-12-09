@@ -5,7 +5,7 @@ weight : 7
 chapter : false
 pre : " <b> 1.7. </b> "
 ---
-## Week 7 Objectives:
+## Mục tiêu Tuần 7:
 - Làm chủ các dịch vụ **Data Engineering & Analytics** trong AWS: S3, Kinesis, Glue, Athena, QuickSight, Redshift.  
 - Hiểu và thực hành đầy đủ pipeline: **Ingest → Store → Catalog → Transform → Analyze → Visualize → Serve**.  
 - Khám phá **DynamoDB** từ cơ bản đến serverless global application và event-driven architecture.  
@@ -14,7 +14,7 @@ pre : " <b> 1.7. </b> "
 - Xây dựng dashboard phân tích với QuickSight và cải thiện phiên bản dashboard nâng cao.  
 
 ---
-## Tasks to be carried out this week:
+## Nhiệm vụ thực hiện trong tuần:
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
@@ -27,7 +27,7 @@ pre : " <b> 1.7. </b> "
 [1]: https://www.youtube.com/playlist?list=PLahN4TLWtox2a3vElknwzU_urND8hLn1i
 
 ---
-## Week 7 Achievements:
+## Thành tựu Tuần 7:
 - Xây dựng thành công pipeline phân tích hoàn chỉnh từ ingestion đến visualization.  
 - Sử dụng Glue Crawler để tạo Data Catalog tự động, phân tích bằng Athena và visualize bằng QuickSight.  
 - Hiểu sâu DynamoDB: key design, scaling patterns, backup, cost allocation & serverless global application.  
