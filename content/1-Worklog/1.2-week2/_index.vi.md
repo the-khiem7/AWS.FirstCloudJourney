@@ -1,22 +1,36 @@
 ---
-title : "Giới thiệu"
+title : "Week 2 Worklog"
 
-weight : 1 
+weight : 2
 chapter : false
-pre : " <b> 1. </b> "
+pre : " <b> 1.2. </b> "
 ---
-**Session Manager** là một chức năng nằm trong dịch vụ System Manager của AWS, Session Manager cung cấp khả năng quản lý các máy chủ một cách an toàn mà **không cần mở port SSH, không cần Bastion Host hoặc quản lý SSH key**. 
-Session Manager cũng giúp dễ dàng tuân thủ các chính sách của công ty yêu cầu quyền truy cập có kiểm soát, đảm bảo việc bảo mật nghiêm ngặt và ghi log truy việc truy cập trong khi vẫn cung cấp cho người dùng cuối quyền truy cập đa nền tảng.
+## Week 2 Objectives:
+- Hiểu nền tảng về **AWS VPC** và các khái niệm mạng cốt lõi trong AWS.  
+- Nắm được cơ chế bảo mật VPC: **Security Group**, **Network ACL**, Routing, Subnet, IGW, NAT.  
+- Tiếp cận các mô hình hybrid networking: **VPN**, **DirectConnect**, **Route 53 Resolver**.  
+- Thực hành toàn bộ VPC labs từ cơ bản đến nâng cao: tạo VPC, subnet, routing, DNS resolver, VPC peering và Transit Gateway.  
+- Củng cố kỹ năng thiết kế mạng trong AWS cho các module tiếp theo.
 
-Với việc sử dụng Session Manager, bạn sẽ có được những ưu điểm sau:
+---
+## Tasks to be carried out this week:
 
-- Không cần phải mở cổng 22 cho giao thức SSH.
-- Có thể cấu hình để kết nối không cần đi ra ngoài internet.
-- Không cần quản lý private key của server để kết nối SSH.
-- Quản lý tập trung được user bằng việc sử dụng AWS IAM.
-- Truy cập tới server một cách dễ dàng và đơn giản bằng một cú click chuột.
-- Thời gian truy cập nhanh chóng hơn các phương thức truyền thống như SSH.
-- Hỗ trợ nhiều hệ điều hành khác nhau như Linux, Windows, MacOS.
-- Log lại được các phiên kết nối và các câu lệnh đã thực thi trong lúc kết nối tới server.
+| Day | Task | Start Date | Completion Date | Reference Material |
+|-----|------|------------|-----------------|-------------------|
+| 1 | Học **Module 02 – VPC Core Concepts**: <br> + 02-01: AWS Virtual Private Cloud <br> + 02-02: VPC Security & Multi-VPC Features <br> + 02-03: VPN, DirectConnect, LoadBalancer & Extra Resources | 15/09/2025 | 15/09/2025 | [AWS Study Group][1] |
+| 2 | Thực hành **VPC Labs – Lab03 (Phần 1)**: <br> + 02-Lab03-01 → Intro & VPN site-to-site <br> + Subnets: 01.1 <br> + Route Table: 01.2 <br> + Internet Gateway: 01.3 <br> + NAT Gateway: 01.4 | 16/09/2025 | 16/09/2025 | [AWS Study Group][1] |
+| 3 | Thực hành **VPC Labs – Lab03 (Phần 2)**: <br> + 02-Lab03-02.1 → Security Group <br> + 02-Lab03-02.2 → Network ACLs <br> + 02-Lab03-02.3 → VPC Resource Map <br> + 02-Lab03-03.x → VPC, Subnet, IGW, Route Table, SG <br> + 02-Lab03-04.x → EC2, Test Connection, NAT Gateway, EC2 Instance Connect Endpoint | 17/09/2025 | 17/09/2025 | [AWS Study Group][1] |
+| 4 | Thực hành **Hybrid DNS – Lab10**: <br> + 10-01, 10-02.x, 10-03 <br> + 10-05.x cấu hình DNS <br> + Kiểm thử & cleanup | 18/09/2025 | 18/09/2025 | [AWS Study Group][1] |
+| 5 | Thực hành **VPC Peering & Transit Gateway**: <br> + Lab19 → Peering (Intro → ACL → Peering → Route → DNS → Cleanup) <br> + Lab20 → Transit Gateway, attachment, routing | 19/09/2025 | 19/09/2025 | [AWS Study Group][1] |
 
-Với những ưu điểm trên, bạn có thể sử dụng Session Manager thay vì sử dụng kỹ thuật Bastion host giúp chúng ta tiết kiệm được thời gian và chi phí khi quản lý server Bastion.
+[1]: https://www.youtube.com/playlist?list=PLahN4TLWtox2a3vElknwzU_urND8hLn1i
+
+---
+## Week 2 Achievements:
+- Hiểu rõ cấu trúc mạng AWS và cách thiết kế VPC từ đầu.  
+- Áp dụng thực tế **IGW, NAT Gateway, Route Table, Subnet**, và bảo mật mạng.  
+- Phân biệt rõ giữa **Security Group (stateful)** và **Network ACL (stateless)**.  
+- Làm chủ quy trình thiết lập DNS lai (Hybrid DNS) với Route 53 Resolver.  
+- Hoàn thành toàn bộ labs về **VPC Peering** và **Transit Gateway**.  
+- Tự tin xây dựng topology mạng quy mô nhỏ đến trung bình phục vụ kiến trúc thực tế.  
+---
