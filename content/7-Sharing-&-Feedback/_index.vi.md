@@ -5,8 +5,6 @@ chapter : false
 pre : " <b> 7. </b> "
 ---
 
-# CHIA SẺ VÀ PHẢN HỒI
-
 Dưới đây là những chia sẻ cá nhân của tôi về trải nghiệm tham gia chương trình First Cloud Journey. Những phản hồi này phản ánh đúng phong cách học tập, tư duy kỹ thuật và trải nghiệm thực tế của tôi trong suốt hành trình.
 
 ---

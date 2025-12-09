@@ -5,8 +5,6 @@ chapter : false
 pre : " <b> 7. </b> "
 ---
 
-# SHARING AND FEEDBACK
-
 Below is my personal reflection on the First Cloud Journey program, written in a way that represents my real working style, learning approach, and technical growth.
 
 ---

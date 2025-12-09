@@ -5,7 +5,14 @@ chapter: false
 pre: " <b> 4. </b> "
 ---
 
-Document conferences, meetups, and training sessions attended during the internship.
+Highlights from conferences, meetups, and training sessions attended during the internship.
+
+## Events Participated
+
+- **AWS Vietnam Cloud Day 2025**  
+  **Date & Time:** Thursday, 18 September 2025  
+  **Location:** Bitexco Financial Tower, Ho Chi Minh City  
+  **Role:** Attendee  
 
 ### Content
 
