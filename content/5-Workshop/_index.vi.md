@@ -1,6 +1,6 @@
 ---
-title: "5. Workshop"
-menuTitle: "5. Workshop"
+title: "Workshop"
+menuTitle: "Workshop"
 weight: 5
 chapter: false
 pre: "<b>5. </b>"
