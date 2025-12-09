@@ -9,6 +9,11 @@ Tổng hợp các hội thảo, meetup và khóa đào tạo đã tham dự tron
 
 ## Sự kiện đã tham gia
 
+- **AWS First Cloud Journey Community Day 2025**  
+  **Thời gian:** Thứ Bảy, 30/08/2025  
+  **Địa điểm:** Bitexco Financial Tower, TP. Hồ Chí Minh  
+  **Vai trò:** Người tham dự  
+
 - **AWS Vietnam Cloud Day 2025**  
   **Thời gian:** Thứ Năm, 18/09/2025  
   **Địa điểm:** Bitexco Financial Tower, TP. Hồ Chí Minh  
@@ -16,4 +21,5 @@ Tổng hợp các hội thảo, meetup và khóa đào tạo đã tham dự tron
 
 ### Nội dung
 
-- [AWS Vietnam Cloud Day 2025](4.1-AWS-Vietnam-Cloud-Day-2025/)
+- [AWS First Cloud Journey Community Day 2025](4.1-AWS-First-Cloud-Journey-Community-Day-2025/)
+- [AWS Vietnam Cloud Day 2025](4.2-AWS-Vietnam-Cloud-Day-2025/)
