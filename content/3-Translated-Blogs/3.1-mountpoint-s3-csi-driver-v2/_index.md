@@ -6,8 +6,6 @@ chapter: false
 pre: " <b> 3.1. </b> "
 ---
 
-# **Mountpoint for Amazon S3 CSI driver v2: Accelerated performance and improved resource usage for Kubernetes workloads**
-
 by Ran Pergamin, Ankit Kalyani, Burak Varli, and Dmitry Nutels on 06 AUG 2025 in [Advanced (300)](https://aws.amazon.com/blogs/storage/category/advanced-300/), [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/), [Amazon Elastic Kubernetes Service](https://aws.amazon.com/eks/), [Amazon Simple Storage Service (S3)](https://aws.amazon.com/s3/), [AWS Identity and Access Management (IAM)](https://aws.amazon.com/iam/), [Open Source](https://aws.amazon.com/opensource/), [Storage](https://aws.amazon.com/storage/), [Technical How-to](https://aws.amazon.com/blogs/storage/category/how-to/) [Permalink](https://aws.amazon.com/blogs/storage/mountpoint-for-amazon-s3-csi-driver-v2-accelerated-performance-and-improved-resource-usage-for-kubernetes-workloads/)
 
 [Amazon S3](https://aws.amazon.com/s3/) is the best place to build data lakes because of its durability, availability, scalability, and security. In 2023, we introduced [Mountpoint for Amazon S3](https://aws.amazon.com/s3/features/mountpoint/), an open source file client that allows Linux-based applications to access S3 objects through a file API. Shortly after, we took this one step further with the [Mountpoint for Amazon S3 Container Storage Interface (CSI) driver](https://github.com/awslabs/mountpoint-s3-csi-driver) for containerized applications. This enabled you to access S3 objects from your Kubernetes applications through a file system interface.

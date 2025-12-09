@@ -6,8 +6,6 @@ chapter: false
 pre: " <b> 3.3. </b> "
 ---
 
-# **Streaming Windows Games with Proton 9 on Amazon GameLift Streams**
-
 *By Benjamin Meyer, Adam Chernick, and Natasha Rooney | 07 AUG 2025 | In: [Amazon EC2](https://aws.amazon.com/ec2/), [Amazon GameLift](https://aws.amazon.com/gamelift/), [AWS Management Console](https://aws.amazon.com/console/), [Compute](https://aws.amazon.com/blogs/gametech/category/compute/), [Game Development](https://aws.amazon.com/blogs/gametech/category/game-development/), [Games](https://aws.amazon.com/blogs/gametech/category/industries/games/), [Industries](https://aws.amazon.com/blogs/gametech/category/industries/), [Management Tools](https://aws.amazon.com/blogs/gametech/category/management-tools/)*
 
 Players expect instant, click-to-play experiences across any device, and Amazon GameLift Streams helps customers build these experiences for games and streaming application use cases. While playing video games traditionally relies on the Windows operating system, Amazon GameLift Streams can run Windows-based games or applications on a Windows runtime or a Proton runtime.

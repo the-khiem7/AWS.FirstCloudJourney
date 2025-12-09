@@ -5,7 +5,6 @@ weight: 1
 chapter: false
 pre: " <b> 3.1. </b> "
 ---
-# **Mountpoint for Amazon S3 CSI driver v2: Accelerated performance and improved resource usage for Kubernetes workloads**
 
 by Ran Pergamin, Ankit Kalyani, Burak Varli, and Dmitry Nutels on 06 AUG 2025 in [Advanced (300)](https://aws.amazon.com/blogs/storage/category/advanced-300/), [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/), [Amazon Elastic Kubernetes Service](https://aws.amazon.com/eks/), [Amazon Simple Storage Service (S3)](https://aws.amazon.com/s3/), [AWS Identity and Access Management (IAM)](https://aws.amazon.com/iam/), [Open Source](https://aws.amazon.com/opensource/), [Storage](https://aws.amazon.com/storage/), [Technical How-to](https://aws.amazon.com/blogs/storage/category/how-to/) [Permalink](https://aws.amazon.com/blogs/storage/mountpoint-for-amazon-s3-csi-driver-v2-accelerated-performance-and-improved-resource-usage-for-kubernetes-workloads/) 
 

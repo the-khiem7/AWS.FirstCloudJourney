@@ -6,8 +6,6 @@ chapter: false
 pre: " <b> 3.2. </b> "
 ---
 
-# **SAP Load Testing: A Serverless Approach with AWS**
-
 *by **Michele Donna** and **Francesco Bersani** | on **07 AUG 2025** | in [Amazon Athena](https://aws.amazon.com/athena/), [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/), [Amazon Managed Grafana](https://aws.amazon.com/grafana/), [Open Source](https://aws.amazon.com/blogs/awsforsap/category/open-source/), [SAP on AWS](https://aws.amazon.com/sap/), [Serverless](https://aws.amazon.com/serverless/)*
 
 ## **Introduction**

@@ -5,7 +5,6 @@ weight: 3
 chapter: false
 pre: " <b> 3.3. </b> "
 ---
-# **Phát trực tuyến trò chơi Windows bằng Proton 9 trên Amazon GameLift Streams**
 
 *Tác giả: Benjamin Meyer, Adam Chernick và Natasha Rooney | ngày 07 tháng 8 năm 2025 | Trong: [Amazon EC2](https://aws.amazon.com/ec2/), [Amazon GameLift](https://aws.amazon.com/gamelift/), [AWS Management Console](https://aws.amazon.com/console/), [Compute](https://aws.amazon.com/blogs/gametech/category/compute/), [Game Development](https://aws.amazon.com/blogs/gametech/category/game-development/), [Games](https://aws.amazon.com/blogs/gametech/category/industries/games/), [Industries](https://aws.amazon.com/blogs/gametech/category/industries/), [Management Tools](https://aws.amazon.com/blogs/gametech/category/management-tools/)*
 
