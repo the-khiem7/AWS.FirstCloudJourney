@@ -1,22 +1,29 @@
 ---
-title : "Worklog Tuần 10"
-
+title : "Week 10 Worklog"
 weight : 10
 chapter : false
 pre : " <b> 1.10. </b> "
 ---
-**Session Manager** là một chức năng nằm trong dịch vụ System Manager của AWS, Session Manager cung cấp khả năng quản lý các máy chủ một cách an toàn mà **không cần mở port SSH, không cần Bastion Host hoặc quản lý SSH key**. 
-Session Manager cũng giúp dễ dàng tuân thủ các chính sách của công ty yêu cầu quyền truy cập có kiểm soát, đảm bảo việc bảo mật nghiêm ngặt và ghi log truy việc truy cập trong khi vẫn cung cấp cho người dùng cuối quyền truy cập đa nền tảng.
+## Week 10 Objectives:
+- Hoàn thiện nhiều vòng chỉnh sửa Architecture.  
+- Chuẩn hóa môi trường dev: Docker, LocalStack, Terraform.  
+- Tạo template tài liệu chuẩn và phân công viết nội dung.  
+- Kiểm tra và nghiệm thu template trước deadline.  
 
-Với việc sử dụng Session Manager, bạn sẽ có được những ưu điểm sau:
+---
+## Tasks to be carried out this week:
 
-- Không cần phải mở cổng 22 cho giao thức SSH.
-- Có thể cấu hình để kết nối không cần đi ra ngoài internet.
-- Không cần quản lý private key của server để kết nối SSH.
-- Quản lý tập trung được user bằng việc sử dụng AWS IAM.
-- Truy cập tới server một cách dễ dàng và đơn giản bằng một cú click chuột.
-- Thời gian truy cập nhanh chóng hơn các phương thức truyền thống như SSH.
-- Hỗ trợ nhiều hệ điều hành khác nhau như Linux, Windows, MacOS.
-- Log lại được các phiên kết nối và các câu lệnh đã thực thi trong lúc kết nối tới server.
+| Day | Task | Start Date | Completion Date | Reference Material |
+|-----|------|------------|-----------------|-------------------|
+| 1 | - Tìm hiểu Docker và cài thư viện LocalStack. <br> - Khảo sát version thư viện và đóng gói Docker. <br> - Sửa lại architecture. <br> - Chỉnh sửa bản tiếng Việt. <br> - Tạo file docx template (chưa hoàn thành). | 11/11/2025 20:00 | 11/11/2025 23:30 | Meeting notes |
+| 2 | - Chỉnh sửa architecture (v9). | 12/11/2025 20:00 | 12/11/2025 23:00 | Meeting notes |
+| 3 | - Hoàn thiện template. <br> - Chia nội dung cho team theo từng mục (deadline 16/11). | 13/11/2025 20:00 | 13/11/2025 21:30 | Meeting notes |
+| 4 | - Kiểm tra nội dung template. <br> - Hoàn thành nghiệm thu template. | 16/11/2025 13:00 | 16/11/2025 14:00 | Meeting notes |
 
-Với những ưu điểm trên, bạn có thể sử dụng Session Manager thay vì sử dụng kỹ thuật Bastion host giúp chúng ta tiết kiệm được thời gian và chi phí khi quản lý server Bastion.
+---
+## Week 10 Achievements:
+- Architecture được tối ưu qua nhiều vòng.  
+- Môi trường dev dùng Docker + LocalStack đã sẵn sàng.  
+- Template tài liệu hoàn chỉnh và phân chia nhiệm vụ rõ ràng.  
+- Template đã được nghiệm thu đúng hạn.  
+---
