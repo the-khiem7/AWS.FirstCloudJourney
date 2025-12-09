@@ -1,22 +1,31 @@
 ---
-title : "Worklog Tuần 12"
-
+title : "Week 12 Worklog"
 weight : 12
 chapter : false
 pre : " <b> 1.12. </b> "
 ---
-**Session Manager** là một chức năng nằm trong dịch vụ System Manager của AWS, Session Manager cung cấp khả năng quản lý các máy chủ một cách an toàn mà **không cần mở port SSH, không cần Bastion Host hoặc quản lý SSH key**. 
-Session Manager cũng giúp dễ dàng tuân thủ các chính sách của công ty yêu cầu quyền truy cập có kiểm soát, đảm bảo việc bảo mật nghiêm ngặt và ghi log truy việc truy cập trong khi vẫn cung cấp cho người dùng cuối quyền truy cập đa nền tảng.
+## Week 12 Objectives:
+- Hoàn thiện LocalStack PRO workflow.  
+- Triển khai Amplify + CloudFront ở local & AWS thật.  
+- Tích hợp Cognito vào Amplify local.  
+- Deploy PostgreSQL trên EC2 & upload dữ liệu vào S3.  
+- Nghiên cứu quy trình deploy thật bằng Terraform.  
+- Bắt đầu thiết kế dataframe lớn của hệ thống.
 
-Với việc sử dụng Session Manager, bạn sẽ có được những ưu điểm sau:
+---
+## Tasks to be carried out this week:
 
-- Không cần phải mở cổng 22 cho giao thức SSH.
-- Có thể cấu hình để kết nối không cần đi ra ngoài internet.
-- Không cần quản lý private key của server để kết nối SSH.
-- Quản lý tập trung được user bằng việc sử dụng AWS IAM.
-- Truy cập tới server một cách dễ dàng và đơn giản bằng một cú click chuột.
-- Thời gian truy cập nhanh chóng hơn các phương thức truyền thống như SSH.
-- Hỗ trợ nhiều hệ điều hành khác nhau như Linux, Windows, MacOS.
-- Log lại được các phiên kết nối và các câu lệnh đã thực thi trong lúc kết nối tới server.
+| Day | Task | Start Date | Completion Date | Reference Material |
+|-----|------|------------|-----------------|-------------------|
+| 1 | **LocalStack Missions:** <br> - Config API Key. <br> - Chạy Docker image. <br> - Apply Terraform. <br> - Sửa Terraform khớp diagram. <br> - Kích hoạt CloudFront trong Amplify. <br> **Amplify:** nghiên cứu nhúng NextJS. <br> **Cognito:** tích hợp vào Amplify local. <br> **Web Data:** Deploy PostgreSQL EC2 & upload ảnh lên S3. | 24/11/2025 20:00 | 24/11/2025 22:00 | Meeting notes |
+| 2 | **LocalStack:** <br> - Tạo Terraform riêng cho Amplify. <br> - Truyền NextJS vào Amplify LS. <br> - Enable CloudFront & S3 integration. <br><br> **Real AWS:** <br> - Deploy Amplify thật. <br> - Push project vào Amplify. <br> - Enable CloudFront + S3 integration. <br> - Tìm hiểu deploy Terraform AWS thật. <br> - Hướng xử lý khi deploy lỗi & tác động chi phí. <br> - Nghiên cứu cách SA triển khai workloads thực tế. | 30/11/2025 15:00 | 01/12/2025 01:30 | Meeting notes |
 
-Với những ưu điểm trên, bạn có thể sử dụng Session Manager thay vì sử dụng kỹ thuật Bastion host giúp chúng ta tiết kiệm được thời gian và chi phí khi quản lý server Bastion.
+---
+## Week 12 Achievements:
+- LocalStack PRO + Terraform hoạt động ổn định.  
+- Amplify + CloudFront chạy trên cả local & AWS thật.  
+- Cognito tích hợp thành công vào Amplify local.  
+- PostgreSQL EC2 + S3 hoạt động theo yêu cầu.  
+- Hiểu rõ quy trình deploy thực tế trên AWS Cloud.  
+- Dataframe hệ thống được khởi tạo nền móng.  
+---

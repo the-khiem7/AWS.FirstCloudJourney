@@ -1,21 +1,31 @@
 ---
 title : "Week 12 Worklog"
-
 weight : 12
 chapter : false
 pre : " <b> 1.12. </b> "
 ---
-**Session Manager** is a function within the AWS System Manager service, SSM provides verifiable and secure version management without opening incoming ports, without Bastion Host or SSH key management. Session Manager also makes it easy to comply with corporate policies that require controlled access to instances, strict security practices, and fully auditable logs with instance access details, while still providing end-users with one-click cross-platform access to your managed instances.
+## Week 12 Objectives:
+- Finalize LocalStack PRO workflow.  
+- Deploy Amplify + CloudFront on LS and real AWS.  
+- Integrate Cognito into Amplify local environment.  
+- Deploy PostgreSQL EC2 & upload media to S3.  
+- Research real AWS Terraform deployment strategy.  
+- Begin designing the global dataframe.
 
-By using Session Manager, you get the following advantages that traditional methods do not have:
+---
+## Tasks to be carried out this week:
 
-- No need to open port 22 for SSH protocol, so it is more secure.
-- Can be configured so that the connection does not need to go outside the internet, so it is more secure.
-- No need to manage the server's private key to connect to SSH.
-- Centralized management of users using AWS IAM.
-- Access to the server easily and simply with one click.
-- Faster access time than traditional methods like SSH
-- Support many different operating systems such as Linux, Windows, MacOS
-- Log the connection sessions and commands executed while connecting to the server.
-  
-With the above advantages, you can use Session Manager instead of using Bastion host technique to save us time and money when managing Bastion server. 
+| Day | Task | Start Date | Completion Date | Reference Material |
+|-----|------|------------|-----------------|-------------------|
+| 1 | **LocalStack:** <br> - Configure API key, run Docker image. <br> - Apply Terraform. <br> - Fix Terraform according to architecture. <br> - Enable CloudFront for Amplify. <br> **Amplify:** research embedding NextJS. <br> **Cognito:** integrate into Amplify LS. <br> **Web Data:** Deploy PostgreSQL EC2 & upload images to S3. | 24/11/2025 20:00 | 24/11/2025 22:00 | Meeting notes |
+| 2 | **LocalStack:** <br> - Create dedicated Terraform for Amplify. <br> - Push NextJS into Amplify LS. <br> - Enable CloudFront & S3 integration. <br><br> **Real AWS:** <br> - Deploy actual Amplify instance. <br> - Push project to Amplify. <br> - Enable CloudFront + S3 integration. <br> - Study Terraform deploy on AWS. <br> - Learn how to handle deployment failures & cost impact. <br> - Study real-world deployment methods of Solutions Architects. | 30/11/2025 15:00 | 01/12/2025 01:30 | Meeting notes |
+
+---
+## Week 12 Achievements:
+- LocalStack PRO + Terraform workflow now stable.  
+- Amplify + CloudFront working on both local & production AWS.  
+- Cognito integrated successfully.  
+- PostgreSQL EC2 + S3 integrated properly.  
+- Strong understanding of real AWS deployment pipelines.  
+- Established foundation for large system dataframe.  
+---
