@@ -1,9 +1,9 @@
 ---
 title : "Worklog Tuần 12"
 
-weight : 1 
+weight : 12
 chapter : false
-pre : " <b> 1. </b> "
+pre : " <b> 1.12. </b> "
 ---
 **Session Manager** là một chức năng nằm trong dịch vụ System Manager của AWS, Session Manager cung cấp khả năng quản lý các máy chủ một cách an toàn mà **không cần mở port SSH, không cần Bastion Host hoặc quản lý SSH key**. 
 Session Manager cũng giúp dễ dàng tuân thủ các chính sách của công ty yêu cầu quyền truy cập có kiểm soát, đảm bảo việc bảo mật nghiêm ngặt và ghi log truy việc truy cập trong khi vẫn cung cấp cho người dùng cuối quyền truy cập đa nền tảng.

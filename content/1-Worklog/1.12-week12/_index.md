@@ -1,7 +1,7 @@
 ---
 title : "Week 12 Worklog"
 
-weight : 2
+weight : 12
 chapter : false
 pre : " <b> 1.12. </b> "
 ---
